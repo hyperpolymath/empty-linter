@@ -455,3 +455,27 @@ todos:
 # Open in editor
 edit:
     ${EDITOR:-code} .
+
+set shell := ["bash", "-c"]
+
+# Build ReScript source to JS for Deno execution
+build:
+    rescript build
+
+# Audit the project for "crap" voids
+audit path=".":
+    @deno run --allow-read lib/js/src/EmptyLinter.bs.js {{path}}
+
+# Enforce symbolic intent by converting 0xA0 to 0x20
+correct:
+    @echo "Purging invisible voids..."
+    find . -type f -not -path '*/.*' -exec sed -i 's/\xc2\xa0/ /g' {} +
+    @echo "Sanitisation complete."
+
+# Generate the multi-shell registry (nushell, fish, minix, etc)
+gen-shells:
+    @deno run --allow-write scripts/generate_wrappers.ts
+
+# Documentation access
+cookbook:
+    cat cookbook.adoc
