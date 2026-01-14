@@ -1,1 +1,82 @@
+= empty-linter: Negative-Space Diagnostics
+:revdate: 2026-01-14
+:status: Alpha
+:author: Gemini 3 Flash (Web/Paid)
+:orchestrator: must-just-nickel
 
+image:https://img.shields.io/badge/Overlay-Magenta-brightgreen.svg[Crap-Overlay]
+image:https://img.shields.io/badge/Logic-ReScript-orange.svg[ReScript]
+image:https://img.shields.io/badge/Runtime-Deno-white.svg[Deno]
+
+== The Objective
+**empty-linter** is a toolkit designed to see "what is not there." It purges invisible artifacts—NBSPs, Zero-Width spaces, and null bytes—that corrupt file integrity and cause neural-generated character mess to fail in symbolic parsers.
+
+It acts as the "Eyes" for agents, enforcing symbolic structural intent over hidden "crap-voids."
+
+* **Config:** Managed via `config.ncl` (Nickel).
+* **Task Runner:** Managed via `Justfile` (Just).
+* **Logic:** Written in ReScript, executed via Deno.
+* **Deployment:** nerdctl-first, supporting Linux, Minix, macOS, iOS, Android, and PC.
+
+== Crap-Overlay Playbook
+1. **Audit:** Identify invisible artifacts.
+2. **Highlight:** Magenta-coded reporting of offsets.
+3. **Correct:** 0xA0 to 0x20 conversion and ZWSP stripping.
+
+== Quick Start (Bash)
+
+The primary entry point for Bash is provided below. For all other supported shells (including `nushell`, `fish`, `minix shell`, `elvish`, etc.), please refer to link:docs/SHELLS.adoc[The Multi-Shell Registry].
+
+[source,bash]
+----
+#!/usr/bin/env bash
+# Primary Bash wrapper for empty-linter
+# Usage: ./bin/empty-linter.sh [directory]
+
+TARGET=${1:-"."}
+
+if ! command -v deno &> /dev/null; then
+    echo "Deno not found. Please install Deno to run empty-linter."
+    exit 1
+fi
+
+deno run --allow-read lib/js/src/EmptyLinter.bs.js "$TARGET"
+----
+
+== Usage via Just
+
+We prefer the use of `just` for all development tasks. Refer to the link:cookbook.adoc[Cookbook] for a full list of recipes.
+
+[source,bash]
+----
+# Run the Magenta crap-overlay report
+just audit
+
+# Sanitise the codebase (Auto-fix voids)
+just correct
+----
+
+== Configuration (Nickel)
+
+All structural intent is defined in `config.ncl`:
+
+[source,nickel]
+----
+{
+  linter = {
+    target_dir = ".",
+    severity = "error",
+    overlay_color = "magenta",
+    auto_fix = true,
+  }
+}
+----
+
+== Deployment
+
+Deployment is handled via Podman to ensure cross-platform compatibility across edge tech and ASICs.
+
+[source,bash]
+----
+just deploy-nerctl
+----
