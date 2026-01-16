@@ -23,19 +23,58 @@ build:
     @echo "Building {{project}}..."
     rescript build
 
+# Clean build artifacts
+clean:
+    @echo "Cleaning {{project}}..."
+    rescript clean
+
+# Watch mode for development
+dev:
+    @echo "Starting watch mode..."
+    rescript build -w
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Run all tests
+test: build
+    @echo "Running tests..."
+    deno test --allow-read --allow-write tests/
+
+# Run tests with verbose output
+test-verbose: build
+    @echo "Running tests (verbose)..."
+    deno test --allow-read --allow-write tests/ --trace-leaks
+
+# Run specific test file
+test-file file: build
+    @echo "Running {{file}}..."
+    deno test --allow-read --allow-write tests/{{file}}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # LINT & FORMAT (The Crap-Overlay)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Audit the project for invisible "crap" voids (Magenta Overlay)
-audit path=".":
-    @deno run --allow-read lib/js/src/EmptyLinter.bs.js {{path}}
+audit path=".": build
+    @deno run --allow-read src/cli/Main.res.js audit {{path}}
 
-# Enforce symbolic intent (0xA0 -> 0x20 conversion)
-fix:
-    @echo "Purging invisible voids..."
-    find . -type f -not -path '*/.*' -exec sed -i 's/\xc2\xa0/ /g' {} +
-    @echo "Sanitisation complete."
+# Quick audit using direct module
+audit-quick path=".": build
+    @deno run --allow-read EmptyLinter.res.js {{path}}
+
+# Enforce symbolic intent - auto-fix all artifacts
+fix path=".": build
+    @deno run --allow-read --allow-write src/cli/Main.res.js fix {{path}}
+
+# Transform text using default options
+transform path: build
+    @deno run --allow-read --allow-write src/cli/Main.res.js transform {{path}}
+
+# Check against workspace constraints
+check path workspace="twitter": build
+    @deno run --allow-read src/cli/Main.res.js check -w {{workspace}} {{path}}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DOCUMENTATION
