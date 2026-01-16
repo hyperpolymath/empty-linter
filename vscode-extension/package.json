@@ -1,0 +1,163 @@
+{
+  "name": "empty-linter",
+  "displayName": "Empty Linter",
+  "description": "Detect and fix invisible Unicode artifacts in your code and text files",
+  "version": "0.1.0",
+  "publisher": "hyperpolymath",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperpolymath/empty-linter"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "invisible",
+    "unicode",
+    "nbsp",
+    "zwsp",
+    "bom",
+    "whitespace",
+    "lint",
+    "clean"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "emptyLinter.scanDocument",
+        "title": "Empty Linter: Scan Current Document"
+      },
+      {
+        "command": "emptyLinter.fixDocument",
+        "title": "Empty Linter: Fix Current Document"
+      },
+      {
+        "command": "emptyLinter.scanWorkspace",
+        "title": "Empty Linter: Scan Workspace"
+      },
+      {
+        "command": "emptyLinter.toggleHighlight",
+        "title": "Empty Linter: Toggle Artifact Highlighting"
+      },
+      {
+        "command": "emptyLinter.showMetrics",
+        "title": "Empty Linter: Show Document Metrics"
+      }
+    ],
+    "configuration": {
+      "title": "Empty Linter",
+      "properties": {
+        "emptyLinter.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable Empty Linter"
+        },
+        "emptyLinter.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan documents on save"
+        },
+        "emptyLinter.scanOnOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan documents when opened"
+        },
+        "emptyLinter.autoFix": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically fix artifacts on save"
+        },
+        "emptyLinter.highlightArtifacts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight invisible artifacts in the editor"
+        },
+        "emptyLinter.severity.critical": {
+          "type": "string",
+          "default": "Error",
+          "enum": ["Error", "Warning", "Information", "Hint", "Ignore"],
+          "description": "Diagnostic severity for critical artifacts (NULL, BOM)"
+        },
+        "emptyLinter.severity.error": {
+          "type": "string",
+          "default": "Warning",
+          "enum": ["Error", "Warning", "Information", "Hint", "Ignore"],
+          "description": "Diagnostic severity for error-level artifacts (NBSP, ZWSP)"
+        },
+        "emptyLinter.severity.warning": {
+          "type": "string",
+          "default": "Information",
+          "enum": ["Error", "Warning", "Information", "Hint", "Ignore"],
+          "description": "Diagnostic severity for warning-level artifacts"
+        },
+        "emptyLinter.severity.info": {
+          "type": "string",
+          "default": "Hint",
+          "enum": ["Error", "Warning", "Information", "Hint", "Ignore"],
+          "description": "Diagnostic severity for info-level artifacts"
+        },
+        "emptyLinter.excludePatterns": {
+          "type": "array",
+          "default": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.git/**"],
+          "description": "Glob patterns to exclude from scanning"
+        },
+        "emptyLinter.includeFileTypes": {
+          "type": "array",
+          "default": [],
+          "description": "File types to include (empty = all). Example: ['markdown', 'plaintext', 'typescript']"
+        },
+        "emptyLinter.statusBar.show": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show artifact count in status bar"
+        },
+        "emptyLinter.statusBar.showMetrics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show character/word count in status bar"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "emptyLinter.scanDocument",
+          "group": "emptyLinter"
+        },
+        {
+          "command": "emptyLinter.fixDocument",
+          "group": "emptyLinter"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "emptyLinter.scanDocument",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e"
+      },
+      {
+        "command": "emptyLinter.fixDocument",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "echo 'Ready to publish'",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0"
+  }
+}
