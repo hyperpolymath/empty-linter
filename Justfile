@@ -107,3 +107,8 @@ cookbook:
 # Generate the multi-shell registry (nushell, fish, minix, etc)
 gen-shells:
     @deno run --allow-write scripts/generate_wrappers.ts
+
+# [AUTO-GENERATED] Multi-arch / RISC-V target
+build-riscv:
+	@echo "Building for RISC-V..."
+	cross build --target riscv64gc-unknown-linux-gnu
