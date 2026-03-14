@@ -4,7 +4,7 @@
   "description": "Detect and fix invisible Unicode artifacts in your code and text files",
   "version": "0.1.0",
   "publisher": "hyperpolymath",
-  "license": "AGPL-3.0-or-later",
+  "license": "PMPL-1.0-or-later",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperpolymath/empty-linter"

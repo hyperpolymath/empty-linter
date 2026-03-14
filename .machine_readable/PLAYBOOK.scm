@@ -1,5 +1,5 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; PLAYBOOK.scm - Operational runbook for rsr-template-repo
+;; PLAYBOOK.scm - Operational runbook for empty-linter
 
 (define playbook
   `((version . "1.0.0")

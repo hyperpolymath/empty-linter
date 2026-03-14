@@ -1,5 +1,5 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; META.scm - Meta-level information for rsr-template-repo
+;; META.scm - Meta-level information for empty-linter
 ;; Media-Type: application/meta+scheme
 
 (meta

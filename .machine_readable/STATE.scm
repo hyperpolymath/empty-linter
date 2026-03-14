@@ -1,5 +1,5 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; STATE.scm - Project state for rsr-template-repo
+;; STATE.scm - Project state for empty-linter
 ;; Media-Type: application/vnd.state+scm
 
 (state
@@ -8,11 +8,11 @@
     (schema-version "1.0")
     (created "2026-01-03")
     (updated "2026-01-03")
-    (project "rsr-template-repo")
-    (repo "github.com/hyperpolymath/rsr-template-repo"))
+    (project "empty-linter")
+    (repo "github.com/hyperpolymath/empty-linter"))
 
   (project-context
-    (name "rsr-template-repo")
+    (name "empty-linter")
     (tagline "")
     (tech-stack ()))
 

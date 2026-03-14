@@ -1,10 +1,10 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; ECOSYSTEM.scm - Ecosystem position for rsr-template-repo
+;; ECOSYSTEM.scm - Ecosystem position for empty-linter
 ;; Media-Type: application/vnd.ecosystem+scm
 
 (ecosystem
   (version "1.0")
-  (name "rsr-template-repo")
+  (name "empty-linter")
   (type "")
   (purpose "")
 
