@@ -14,7 +14,7 @@
 // @updateURL    https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // ==/UserScript==
 
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
 //
 // Empty Linter Userscript - Greasemonkey/Tampermonkey compatible
