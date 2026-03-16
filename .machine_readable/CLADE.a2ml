@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "40ad8b7a-db85-5a43-9ac3-7b2cf303d7a4"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "empty-linter"
+prefixed-name = "rm-empty-linter"
+
+[clade]
+primary = "rm"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/empty-linter"
+gitlab = "hyperpolymath/empty-linter"
+bitbucket = "hyperpolymath/empty-linter"
+
+[lineage]
+type = "standalone"
+parent = "Lint for empty or placeholder files"
+born = "2026-03-16"
