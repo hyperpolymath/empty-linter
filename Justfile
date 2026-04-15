@@ -3,6 +3,8 @@ set shell := ["bash", "-uc"]
 set dotenv-load := true
 set positional-arguments := true
 
+import? "contractile.just"
+
 project := "empty-linter"
 version := "0.1.0"
 tier := "infrastructure"
