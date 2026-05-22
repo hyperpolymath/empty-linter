@@ -60,7 +60,7 @@ Detect and fix invisible Unicode artifacts in your code and text files.
 
 ## License
 
-PMPL-1.0-or-later
+MPL-2.0
 
 ## Credits
 

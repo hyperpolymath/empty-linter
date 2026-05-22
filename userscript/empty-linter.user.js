@@ -8,13 +8,13 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
-// @license      PMPL-1.0-or-later
+// @license      MPL-2.0
 // @icon         data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔍</text></svg>
 // @downloadURL  https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // @updateURL    https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // ==/UserScript==
 
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
 //
 // Empty Linter Userscript - Greasemonkey/Tampermonkey compatible
