@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // ==UserScript==
 // @name         Empty Linter - Form Enhancer
 // @namespace    https://hyperpolymath.com/
@@ -14,7 +16,6 @@
 // @updateURL    https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // ==/UserScript==
 
-// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
 //
 // Empty Linter Userscript - Greasemonkey/Tampermonkey compatible
