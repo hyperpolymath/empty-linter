@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Post-audit Status Report: empty-linter
 - **Date:** 2026-04-15
 - **Status:** Complete (M5 Sweep)
@@ -17,7 +21,7 @@
 - 5 unsafe get calls in tests/ByteDetector_test.res
 - DOM manipulation (innerHTML/document.write) in userscript/empty-linter.user.js
 - 1 HTTP (non-HTTPS) URLs in userscript/empty-linter.user.js
-- 14 TODO/FIXME/HACK markers in contractiles/k9/template-hunt.k9.ncl
+- 14 TODO/FIXME/HACK markers in contractiles/self-validating/template-hunt.k9.ncl
 - 1 unsafe get calls in EmptyLinter.res
 - flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.nix
 
