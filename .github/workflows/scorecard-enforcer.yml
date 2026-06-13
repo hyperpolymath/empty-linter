@@ -33,7 +33,11 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: true
+          # publish_results intentionally omitted: the dedicated
+          # scorecard.yml workflow owns OSSF publishing. A publishing
+          # scorecard-action may not share a job/file with `run:` steps
+          # (OSSF "uses-only" constraint — hypatia WF014), and this
+          # enforcer needs a local `run:` threshold gate below.
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@87557b9c84dde89fdd9b10e88954ac2f4248e463 # v4
         with:
