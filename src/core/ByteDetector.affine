@@ -52,7 +52,13 @@ pub fn get_artifact_def(byte_val: Int) -> Option<ArtifactDef> {
 }
 
 pub fn byte_to_hex(v: Int) -> String {
-  encode_byte(v & 255)
+  if v <= 255 {
+    encode_byte(v)
+  } else if v <= 65535 {
+    encode_byte((v >> 8) & 255) ++ encode_byte(v & 255)
+  } else {
+    encode_byte((v >> 16) & 255) ++ encode_byte((v >> 8) & 255) ++ encode_byte(v & 255)
+  }
 }
 
 pub fn scan(content: String) -> [Artifact] {
