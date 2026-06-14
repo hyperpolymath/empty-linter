@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-import { assertEquals, assertNotEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 import {
   default_options, transform, transform_default,
   get_metrics, metrics_to_string,
@@ -70,7 +70,7 @@ Deno.test("TextTransform: metrics_to_string includes char count", () => {
 Deno.test("TextTransform: check_constraints detects char limit exceeded", () => {
   const c = { max_chars: { tag: "Some", value: 5 }, max_words: { tag: "None" }, max_lines: { tag: "None" }, max_bytes: { tag: "None" } };
   const violations = check_constraints("This is a long string", c);
-  assertEquals(violations.length > 0, true);
+  assert(violations.length > 0);
 });
 
 Deno.test("TextTransform: check_constraints passes when within limit", () => {
@@ -81,13 +81,13 @@ Deno.test("TextTransform: check_constraints passes when within limit", () => {
 Deno.test("TextTransform: check_constraints detects word limit exceeded", () => {
   const c = { max_chars: { tag: "None" }, max_words: { tag: "Some", value: 3 }, max_lines: { tag: "None" }, max_bytes: { tag: "None" } };
   const violations = check_constraints("one two three four five", c);
-  assertEquals(violations.length > 0, true);
+  assert(violations.length > 0);
 });
 
 Deno.test("TextTransform: check_constraints detects line limit exceeded", () => {
   const c = { max_chars: { tag: "None" }, max_words: { tag: "None" }, max_lines: { tag: "Some", value: 2 }, max_bytes: { tag: "None" } };
   const violations = check_constraints("a\nb\nc\nd", c);
-  assertEquals(violations.length > 0, true);
+  assert(violations.length > 0);
 });
 
 Deno.test("TextTransform: format_for_html escapes < and >", () => {
