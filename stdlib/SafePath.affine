@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 hyperpolymath
+
+module SafePath;
+
+use prelude::{Option, Some, None};
+use string::{contains, starts_with};
+
+pub fn is_safe(path: String) -> Bool {
+  if starts_with(path, "/") {
+    return false;
+  }
+  if contains(path, "..") {
+    return false;
+  }
+  true
+}
+
+pub fn safe_join(base: String, components: [String]) -> Option<String> {
+  if !is_safe(base) {
+    return None;
+  }
+  let mut result = base;
+  for c in components {
+    if !is_safe(c) {
+      return None;
+    }
+    if len(result) == 0 {
+      result = c;
+    } else {
+      result = result ++ "/" ++ c;
+    }
+  }
+  Some(result)
+}
+
+pub fn sanitize_filename(filename: String) -> String {
+  let n = len(filename);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let c = string_get(filename, i);
+    let code = char_to_int(c);
+    if code == 47 || code == 92 || code == 0 || code == 58 || code == 42 || code == 63 || code == 34 || code == 60 || code == 62 || code == 124 {
+      result = result ++ "_";
+    } else {
+      result = result ++ show(c);
+    }
+    i = i + 1;
+  }
+  result
+}

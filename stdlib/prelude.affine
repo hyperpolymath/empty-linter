@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: MPL-2.0
+// AffineScript Standard Library - Prelude
+// Common functions and utilities automatically available
+
+module prelude;
+
+// ============================================================================
+// Core sum types (canonical home — ADR-011)
+//
+// `Option` and `Result` (and their constructors) are owned here, the
+// foundational module. The `option` / `result` modules provide the
+// *operations* over them and `use prelude::{...}` for the types. The
+// duplicate/conflicting Option/Result ops that previously lived here
+// (is_some, is_none, unwrap, unwrap_or, is_ok, is_err, unwrap_result,
+// unwrap_or_result) were removed in #133: option::* and result::* are
+// the single canonical bindings for those.
+// ============================================================================
+
+pub type Option<T> = Some(T) | None
+
+pub type Result<T, E> = Ok(T) | Err(E)
+
+// ============================================================================
+// List utilities
+// ============================================================================
+
+pub fn map<T, U>(arr: [T], f: T -> U) -> [U] {
+  let mut result = [];
+  for x in arr {
+    result = result ++ [f(x)];
+  }
+  result
+}
+
+pub fn filter<T>(arr: [T], predicate: T -> Bool) -> [T] {
+  let mut result = [];
+  for x in arr {
+    if predicate(x) {
+      result = result ++ [x];
+    }
+  }
+  result
+}
+
+pub fn fold<T, U>(arr: [T], init: U, f: (U, T) -> U) -> U {
+  let mut acc = init;
+  for x in arr {
+    acc = f(acc, x);
+  }
+  acc
+}
+
+/// Conforms to aLib collection/contains spec v1.0
+pub fn contains<T>(arr: [T], element: T) -> Bool {
+  for x in arr {
+    if x == element {
+      return true;
+    }
+  }
+  false
+}
+
+pub fn sum(arr: [Int]) -> Int {
+  fold(arr, 0, |acc, x| acc + x)
+}
+
+pub fn product(arr: [Int]) -> Int {
+  fold(arr, 1, |acc, x| acc * x)
+}
+
+// ============================================================================
+// Comparison and ordering
+// ============================================================================
+
+pub fn min(a: Int, b: Int) -> Int {
+  if a < b { a } else { b }
+}
+
+pub fn max(a: Int, b: Int) -> Int {
+  if a > b { a } else { b }
+}
+
+pub fn clamp(value: Int, min_val: Int, max_val: Int) -> Int {
+  if value < min_val {
+    min_val
+  } else if value > max_val {
+    max_val
+  } else {
+    value
+  }
+}
+
+// ============================================================================
+// Boolean utilities
+// ============================================================================
+
+pub fn not(b: Bool) -> Bool {
+  if b { false } else { true }
+}
+
+pub fn all(arr: [Bool]) -> Bool {
+  for b in arr {
+    if not(b) {
+      return false;
+    }
+  }
+  true
+}
+
+pub fn any(arr: [Bool]) -> Bool {
+  for b in arr {
+    if b {
+      return true;
+    }
+  }
+  false
+}
+
+// ============================================================================
+// Range and iteration utilities
+// ============================================================================
+
+pub fn range(start: Int, end: Int) -> [Int] {
+  let mut result = [];
+  let mut i = start;
+  while i < end {
+    result = result ++ [i];
+    i = i + 1;
+  }
+  result
+}
+
+pub fn repeat<T>(value: T, n: Int) -> [T] {
+  let mut result = [];
+  let mut i = 0;
+  while i < n {
+    result = result ++ [value];
+    i = i + 1;
+  }
+  result
+}
