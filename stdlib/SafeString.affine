@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 hyperpolymath
+
+module SafeString;
+
+pub fn escape_html(s: String) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let c = string_get(s, i);
+    let code = char_to_int(c);
+    if code == 38 {
+      result = result ++ "&amp;";
+    } else if code == 60 {
+      result = result ++ "&lt;";
+    } else if code == 62 {
+      result = result ++ "&gt;";
+    } else if code == 34 {
+      result = result ++ "&quot;";
+    } else if code == 39 {
+      result = result ++ "&#39;";
+    } else {
+      result = result ++ show(c);
+    }
+    i = i + 1;
+  }
+  result
+}
+
+pub fn escape_js(s: String) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let c = string_get(s, i);
+    let code = char_to_int(c);
+    if code == 34 {
+      result = result ++ "\\\"";
+    } else if code == 92 {
+      result = result ++ "\\\\";
+    } else if code == 10 {
+      result = result ++ "\\n";
+    } else if code == 13 {
+      result = result ++ "\\r";
+    } else if code == 9 {
+      result = result ++ "\\t";
+    } else {
+      result = result ++ show(c);
+    }
+    i = i + 1;
+  }
+  result
+}
+
+pub fn char_count(s: String) -> Int {
+  len(s)
+}
+
+pub fn char_count_no_whitespace(s: String) -> Int {
+  let n = len(s);
+  let mut count = 0;
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    if code != 32 && code != 9 && code != 10 && code != 13 {
+      count = count + 1;
+    }
+    i = i + 1;
+  }
+  count
+}
+
+pub fn word_count(s: String) -> Int {
+  let n = len(s);
+  let mut count = 0;
+  let mut in_word = false;
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    let is_ws = code == 32 || code == 9 || code == 10 || code == 13;
+    if !is_ws && !in_word {
+      count = count + 1;
+      in_word = true;
+    } else if is_ws {
+      in_word = false;
+    }
+    i = i + 1;
+  }
+  count
+}

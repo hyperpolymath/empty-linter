@@ -15,6 +15,7 @@
 // @downloadURL  https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // @updateURL    https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // ==/UserScript==
+// hypatia: allow code_safety/js_http_url_in_code -- W3C SVG namespace URI
 
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
 //

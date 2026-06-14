@@ -88,3 +88,4 @@ deps/
 .cache/
 build/
 dist/
+*.deno.js

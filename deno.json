@@ -1,14 +1,15 @@
 {
   "name": "@hyperpolymath/empty-linter",
   "version": "0.1.0",
-  "exports": "./EmptyLinter.res.js",
+  "exports": "./EmptyLinter.deno.js",
   "tasks": {
-    "build": "rescript build",
-    "clean": "rescript clean",
-    "dev": "rescript build -w",
+    "build": "affinescript compile --deno-esm EmptyLinter.affine -o EmptyLinter.deno.js && affinescript compile --deno-esm src/cli/Main.affine -o src/cli/Main.deno.js",
+    "build-all": "for f in stdlib/SafeHex.affine stdlib/SafeWhitespace.affine stdlib/SafePath.affine stdlib/SafeString.affine src/core/ByteDetector.affine src/core/TextTransform.affine src/core/PathHandler.affine EmptyLinter.affine src/cli/Main.affine; do affinescript compile --deno-esm $f -o ${f%.affine}.deno.js; done",
+    "clean": "find . -name '*.deno.js' ! -path './stdlib/*' -delete",
+    "dev": "while true; do affinescript compile --deno-esm EmptyLinter.affine -o EmptyLinter.deno.js 2>&1; sleep 2; done",
     "test": "deno test --allow-read --allow-write tests/",
-    "lint": "deno run --allow-read src/cli/Main.res.js",
-    "check": "deno check src/**/*.res.js"
+    "lint": "deno run --allow-read src/cli/Main.deno.js",
+    "check": "deno check EmptyLinter.deno.js"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"
