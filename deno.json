@@ -4,7 +4,7 @@
   "exports": "./EmptyLinter.deno.js",
   "tasks": {
     "build": "affinescript compile --deno-esm EmptyLinter.affine -o EmptyLinter.deno.js && affinescript compile --deno-esm src/cli/Main.affine -o src/cli/Main.deno.js",
-    "build-all": "for f in stdlib/SafeHex.affine stdlib/SafeWhitespace.affine stdlib/SafePath.affine stdlib/SafeString.affine src/core/ByteDetector.affine src/core/TextTransform.affine src/core/PathHandler.affine EmptyLinter.affine src/cli/Main.affine; do affinescript compile --deno-esm $f -o ${f%.affine}.deno.js; done",
+    "build-all": "bash scripts/build-all.sh",
     "clean": "find . -name '*.deno.js' ! -path './stdlib/*' -delete",
     "dev": "while true; do affinescript compile --deno-esm EmptyLinter.affine -o EmptyLinter.deno.js 2>&1; sleep 2; done",
     "test": "deno test --allow-read --allow-write tests/",
