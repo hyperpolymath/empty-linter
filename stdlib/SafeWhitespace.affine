@@ -1,0 +1,170 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 hyperpolymath
+
+module SafeWhitespace;
+
+pub type LineEnding = LF | CRLF | CR;
+
+fn is_invisible(code: Int) -> Bool {
+  code == 0 || code == 160 || code == 8203 || code == 65279 || code == 173 || code == 8206 || code == 8207 || code == 8204 || code == 8205 || code == 8288
+}
+
+pub fn remove_invisibles(s: String) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let c = string_get(s, i);
+    let code = char_to_int(c);
+    if !is_invisible(code) {
+      result = result ++ show(c);
+    }
+    i = i + 1;
+  }
+  result
+}
+
+pub fn normalize_line_endings(s: String, ending: LineEnding) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    if code == 13 {
+      let is_crlf = i + 1 < n && char_to_int(string_get(s, i + 1)) == 10;
+      let eol = match ending {
+        LF => "\n",
+        CRLF => "\r\n",
+        CR => "\r"
+      };
+      result = result ++ eol;
+      if is_crlf {
+        i = i + 2;
+      } else {
+        i = i + 1;
+      }
+    } else if code == 10 {
+      let eol = match ending {
+        LF => "\n",
+        CRLF => "\r\n",
+        CR => "\r"
+      };
+      result = result ++ eol;
+      i = i + 1;
+    } else {
+      result = result ++ show(string_get(s, i));
+      i = i + 1;
+    }
+  }
+  result
+}
+
+pub fn collapse_spaces(s: String) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut prev_space = false;
+  let mut i = 0;
+  while i < n {
+    let c = string_get(s, i);
+    let code = char_to_int(c);
+    if code == 32 {
+      if !prev_space {
+        result = result ++ " ";
+      }
+      prev_space = true;
+    } else {
+      result = result ++ show(c);
+      prev_space = false;
+    }
+    i = i + 1;
+  }
+  result
+}
+
+pub fn collapse_blank_lines(s: String, max_blank: Int) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut blank_count = 0;
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    if code == 10 {
+      blank_count = blank_count + 1;
+      if blank_count <= max_blank + 1 {
+        result = result ++ "\n";
+      }
+      i = i + 1;
+    } else if code == 13 {
+      blank_count = blank_count + 1;
+      if blank_count <= max_blank + 1 {
+        result = result ++ "\n";
+      }
+      if i + 1 < n && char_to_int(string_get(s, i + 1)) == 10 {
+        i = i + 2;
+      } else {
+        i = i + 1;
+      }
+    } else {
+      blank_count = 0;
+      result = result ++ show(string_get(s, i));
+      i = i + 1;
+    }
+  }
+  result
+}
+
+pub fn trim_start(s: String) -> String {
+  let n = len(s);
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    if code == 32 || code == 9 || code == 10 || code == 13 {
+      i = i + 1;
+    } else {
+      return string_sub(s, i, n - i);
+    }
+  }
+  ""
+}
+
+pub fn trim_end(s: String) -> String {
+  let n = len(s);
+  let mut i = n - 1;
+  while i >= 0 {
+    let code = char_to_int(string_get(s, i));
+    if code == 32 || code == 9 || code == 10 || code == 13 {
+      i = i - 1;
+    } else {
+      return string_sub(s, 0, i + 1);
+    }
+  }
+  ""
+}
+
+pub fn ensure_final_newline(s: String) -> String {
+  let n = len(s);
+  if n == 0 {
+    "\n"
+  } else {
+    let last = char_to_int(string_get(s, n - 1));
+    if last == 10 {
+      s
+    } else {
+      s ++ "\n"
+    }
+  }
+}
+
+pub fn detect_invisibles(s: String) -> [Int] {
+  let n = len(s);
+  let mut result = [];
+  let mut i = 0;
+  while i < n {
+    let code = char_to_int(string_get(s, i));
+    if is_invisible(code) {
+      result = result ++ [code];
+    }
+    i = i + 1;
+  }
+  result
+}
