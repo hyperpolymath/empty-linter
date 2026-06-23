@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = empty-linter: Negative-Space Diagnostics
+image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/empty-linter"]
+
 :revdate: 2026-01-16
 :status: Alpha
 :author: Gemini 3 Flash (Web/Paid)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // ==UserScript==
 // @name         Empty Linter - Form Enhancer
 // @namespace    https://hyperpolymath.com/
@@ -13,8 +15,8 @@
 // @downloadURL  https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // @updateURL    https://github.com/hyperpolymath/empty-linter/raw/main/userscript/empty-linter.user.js
 // ==/UserScript==
+// hypatia: allow code_safety/js_http_url_in_code -- W3C SVG namespace URI
 
-// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
 //
 // Empty Linter Userscript - Greasemonkey/Tampermonkey compatible
@@ -188,17 +190,6 @@
         return { chars, charsNoWhitespace, words, lines, paragraphs };
     }
 
-    /**
-     * Escape HTML for safe rendering
-     * @param {string} str - String to escape
-     * @returns {string} Escaped string
-     */
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     // ═══════════════════════════════════════════════════════════════════════════════
     // UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -284,25 +275,29 @@
         const el = document.createElement('div');
         el.className = 'el-metrics';
 
-        let charDisplay = `<span class="el-metrics-value">${metrics.chars}</span>`;
-        if (constraints && constraints.maxChars) {
-            const isOver = metrics.chars > constraints.maxChars;
-            const cls = isOver ? 'el-metrics-over' : 'el-metrics-value';
-            charDisplay = `<span class="${cls}">${metrics.chars}</span>/${constraints.maxChars}`;
-        }
+        // Built with createElement + textContent only: metric values are
+        // attached as text nodes, so they can never be parsed as markup.
+        // CWE-79 hardening (incident 2026-06-11, empty-linter PR #21 follow-up).
+        const buildMetric = (label, value, max) => {
+            const wrap = document.createElement('span');
+            wrap.appendChild(document.createTextNode(`${label}: `));
+            const valueEl = document.createElement('span');
+            const isOver = max != null && value > max;
+            valueEl.className = isOver ? 'el-metrics-over' : 'el-metrics-value';
+            valueEl.textContent = String(value);
+            wrap.appendChild(valueEl);
+            if (max != null) {
+                wrap.appendChild(document.createTextNode(`/${max}`));
+            }
+            return wrap;
+        };
 
-        let wordDisplay = `<span class="el-metrics-value">${metrics.words}</span>`;
-        if (constraints && constraints.maxWords) {
-            const isOver = metrics.words > constraints.maxWords;
-            const cls = isOver ? 'el-metrics-over' : 'el-metrics-value';
-            wordDisplay = `<span class="${cls}">${metrics.words}</span>/${constraints.maxWords}`;
-        }
+        const maxChars = constraints && constraints.maxChars ? constraints.maxChars : null;
+        const maxWords = constraints && constraints.maxWords ? constraints.maxWords : null;
 
-        el.innerHTML = `
-            <span>Chars: ${charDisplay}</span>
-            <span>Words: ${wordDisplay}</span>
-            <span>Lines: <span class="el-metrics-value">${metrics.lines}</span></span>
-        `;
+        el.appendChild(buildMetric('Chars', metrics.chars, maxChars));
+        el.appendChild(buildMetric('Words', metrics.words, maxWords));
+        el.appendChild(buildMetric('Lines', metrics.lines, null));
 
         return el;
     }
@@ -319,7 +314,7 @@
 
         const el = document.createElement('div');
         el.className = `el-notification el-notification-${type}`;
-        el.innerHTML = message;
+        el.textContent = message;
         document.body.appendChild(el);
 
         setTimeout(() => {
@@ -412,14 +407,14 @@
 
             // Update metrics display
             if (config.showMetrics) {
-                metricsContainer.innerHTML = '';
+                metricsContainer.replaceChildren();
                 metricsContainer.appendChild(createMetricsElement(metrics, constraints));
 
                 // Add artifact warning
                 if (artifacts.length > 0 && config.highlightArtifacts) {
                     const warning = document.createElement('div');
                     warning.style.cssText = 'color: #f97316; font-size: 12px; margin-top: 4px;';
-                    warning.innerHTML = `⚠ ${artifacts.length} invisible character${artifacts.length > 1 ? 's' : ''} detected`;
+                    warning.textContent = `⚠ ${artifacts.length} invisible character${artifacts.length > 1 ? 's' : ''} detected`;
                     metricsContainer.appendChild(warning);
                 }
             }

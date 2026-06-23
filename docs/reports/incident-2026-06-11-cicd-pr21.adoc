@@ -1,0 +1,174 @@
+// // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+= CI/CD Incident — empty-linter PR #21 merged red; estate propagation outage
+:toc: macro
+:icons: font
+:revdate: 2026-06-13
+
+[abstract]
+empty-linter PR #21 (`security: standardize secret scanning on TruffleHog`)
+merged on 2026-06-11 with two red checks (Hypatia, SonarCloud). The
+follow-up auto-remediation that tried to clear one finding instead
+produced an *invalid* `instant-sync.yml`, silently disabling propagation
+to `.git-private-farm`. Because empty-linter is consumed across the
+estate's CI/CD, the blast radius was estate-wide rather than local. This
+report covers what happened, the root causes, the fixes shipped in the
+PR-#21 follow-up branch, and the detection machinery that would catch the
+whole class up- and down-stream.
+
+toc::[]
+
+== Summary
+
+[cols="1,3",options="header"]
+|===
+| Field | Value
+| Subject | `hyperpolymath/empty-linter` PR #21, branch `claude/safedom-res-stale-sweep`
+| Merged | 2026-06-11 23:27:59Z (12 commits, 88 files, +1655/-1044)
+| Red at merge | `Hypatia` (external status): 81 findings (47 high / 34 medium); `SonarCloud`: Quality Gate failed (1 Security Hotspot)
+| Green at merge | CodeQL, in-repo `Hypatia Neurosymbolic Analysis` job, A2ML/K9/Groove/dogfood checks
+| Live impact | `instant-sync.yml` invalid on `main` after `d0db0a1` ⇒ `repository-dispatch` to `.git-private-farm` never fires ⇒ estate propagation silently down
+| Severity | High (estate-wide CI/CD dependency; silent failure mode)
+|===
+
+NOTE: The split between the *passing* in-repo `Hypatia Neurosymbolic
+Analysis` job and the *failing* external `Hypatia` status is the tell:
+the estate-level system saw problems the repo-local job did not. That is
+the up/down-stream coupling this incident is about.
+
+== Timeline
+
+. *21:32Z* — PR #21 opened.
+. *23:19–23:27Z* — Hypatia posts three scan comments (81 findings each); SonarCloud posts Quality-Gate-failed (1 hotspot).
+. *23:27:59Z* — PR #21 merged despite `Hypatia` + `SonarCloud` red.
+. *post-merge* — commit `d0db0a1` (`fix(ci): add presence gate for FARM_DISPATCH_TOKEN in instant-sync`) lands on `main`. It adds `if: ${{ secrets.FARM_DISPATCH_TOKEN != '' }}` *between* `steps:` and the first step. Result: invalid workflow YAML.
+. *2026-06-13* — follow-up branch `claude/gallant-shannon-82193p` repairs all findings + the invalid YAML (this report).
+
+== Findings at merge
+
+[cols="2,3,1,1",options="header"]
+|===
+| Rule | Where | Sev | Class
+| `js_innerhtml` (CWE-79) ×4 | `userscript/empty-linter.user.js` | high | code_safety
+| `secret_action_without_presence_gate` (WF017) ×6 | `mirror.yml` (`webfactory/ssh-agent`) | high | workflow_audit
+| `secret_action_without_presence_gate` (WF017) | `instant-sync.yml` (`peter-evans/repository-dispatch`) | high | workflow_audit
+| `scorecard_publish_with_run_step` (WF014) | `scorecard-enforcer.yml` | high | workflow_audit
+| `codeql_missing_actions_language` (WF020) | `codeql.yml` | medium | workflow_audit
+| SonarCloud Security Hotspot ×1 | (DOM XSS — same `innerHTML` site) | — | sonar
+|===
+
+== Root causes
+
+=== 1. Merge-past-red on a CI/CD-critical repo
+empty-linter is a dependency of the estate's CI/CD, not a leaf app. Merging
+it red means its red state — and any behavioural change — propagates. Branch
+protection did not (or could not) block the merge on the `Hypatia`/`SonarCloud`
+statuses.
+
+=== 2. The automated remediation was itself broken (the central lesson)
+The post-merge gate (`d0db0a1`) implemented Hypatia's WF017 recipe verbatim:
+`if: ${{ secrets.X != '' }}`. Two independent defects:
+
+* *`secrets` is not available in any `if:`* (job or step) in GitHub Actions
+  — only `env`/`vars` are (see actions/runner#520). The gate could never
+  have worked even if well-formed.
+* It was placed between `steps:` and the first list item, at job-key indent,
+  producing *invalid workflow YAML*.
+
+Net effect: a cosmetic "missing presence gate" finding was converted into a
+real outage — `instant-sync.yml` stopped being a runnable workflow, so the
+`repository-dispatch` that drives `.git-private-farm` propagation never fired.
+*A fixer that emits a functionally-invalid recipe is more dangerous than the
+finding it closes.*
+
+=== 3. mirror.yml's pre-existing gate was a silent no-op
+The six mirror jobs gated `webfactory/ssh-agent` on `env.SSH_PRIVATE_KEY`,
+but that env var was *never mapped* from any secret. So the gate was always
+false and every mirror job silently skipped — even where the SSH key was
+present. Hypatia still flagged it because the gate did not reference the
+secret at all.
+
+=== 4. Local-invisibility
+None of these are observable from `mix test` / `cargo test` / running the
+linter locally. Invalid workflow YAML, a gate referencing an unavailable
+context, and a cross-repo propagation dependency only manifest at the
+GitHub-Actions and estate layers. *Local green ≠ estate green.*
+
+== Fixes (follow-up branch `claude/gallant-shannon-82193p`)
+
+[cols="2,4",options="header"]
+|===
+| File | Change
+| `instant-sync.yml` | Rewritten with the *env-mapping* presence-gate pattern: secret → job-level `env`, step `if: ${{ env.FARM_DISPATCH_TOKEN != '' }}`, `with.token: ${{ env.FARM_DISPATCH_TOKEN }}`. Repairs YAML validity *and* clears WF017.
+| `mirror.yml` | Same env-mapping pattern for all six `ssh-agent` jobs; gated the `radicle` step on `RADICLE_KEY` presence and stopped interpolating the secret directly into the shell.
+| `scorecard-enforcer.yml` | Removed `publish_results: true`. Publishing belongs to `scorecard.yml`; a *publishing* `scorecard-action` may not co-reside with `run:` steps (OSSF "uses-only" constraint — WF014). The local threshold-gate `run:` step stays.
+| `codeql.yml` | Added a `language: actions` / `build-mode: none` matrix entry (WF020); CodeQL now scans workflow YAML for CI/CD weaknesses.
+| `userscript/empty-linter.user.js` | Replaced all four `innerHTML =` assignments with `createElement` + `textContent` + `replaceChildren`; removed the dead `escapeHtml` helper (its only `innerHTML` read). Clears the CWE-79 finding and the SonarCloud DOM-XSS hotspot.
+|===
+
+=== Why env-mapping, not the literal Hypatia recipe
+Because `secrets`-in-`if` does not work. Mapping the secret to job-level
+`env` and referencing `env` in *both* the gate and the action input is the
+GitHub-documented pattern. It also clears WF017 structurally: the detector
+keys on `param: ${{ secrets.X }}` appearing in the step block, which is no
+longer present once `with:` reads `env.X`.
+
+All five workflows + the seven others in `.github/workflows/` were
+re-validated as parseable YAML; the userscript passes `node --check`.
+
+== Detection: catching the whole class, up- and down-stream
+
+Ordered by leverage. The recurring theme: *the failure lives at a layer the
+local toolchain never exercises*, so the guard has to live there too.
+
+. *actionlint as a required check + local hook (highest leverage).*
+  actionlint parses workflow YAML and `${{ }}` expressions. It would have
+  caught the invalid `instant-sync.yml` at author time, locally, for free.
+  Every estate repo with workflows should run it pre-commit and in CI.
+. *A "secrets-in-`if`" lint.* Flag any `if:` that references `secrets.*` —
+  always broken. Cheap, kills the entire class. Belongs in both actionlint
+  config and Hypatia (`workflow_audit`).
+. *Hypatia self-consistency (see the Hypatia advisory).* WF017's
+  `:add_secret_presence_gate` recipe must emit the *env-mapping* pattern,
+  and the WF017 detector must positively recognise env-mapping as "gated"
+  rather than relying on the side effect that extraction fails. Otherwise
+  the fleet keeps shipping broken gates. A remediation recipe should be
+  unit-tested against actionlint as part of Hypatia's own CI.
+. *Closed-loop verification on auto-fixes.* Hypatia already has re-scan
+  verification (`OutcomeTracker`). Any automated edit to a workflow must be
+  gated by actionlint + a dry re-scan *before* it lands. `d0db0a1` had no
+  such gate.
+. *Blast-radius / dependency modelling.* Model which repos consume
+  empty-linter and which depend on `.git-private-farm` propagation, so a
+  change's downstream impact is known before merge and so fixes can be made
+  *upstream-once*. See the reflexivity taxonomy + protected-ruleset design
+  in `hypatia`.
+. *Branch protection for CI/CD-critical repos.* On repos tagged
+  CI/CD-critical, the `Hypatia` status must be required and non-bypassable.
+  Merge-past-red is tolerable for a leaf app; not for a dependency of the
+  whole estate.
+
+== Out of scope — flagged to owner (no edit made)
+
+`secret-scanner.yml` and `scorecard.yml` carry `SPDX-License-Identifier:
+PMPL-1.0`. Per estate policy PMPL is reserved for `palimpsest-license`,
+`palimpsest-plasma`, and `consent-aware-http`; empty-linter must be
+`MPL-2.0`. License findings are *flag-only / owner-only* — not touched
+here. Recommend a manual, per-file correction by the owner.
+
+== Appendix — the canonical presence-gate pattern
+
+[source,yaml]
+----
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      FARM_DISPATCH_TOKEN: ${{ secrets.FARM_DISPATCH_TOKEN }}   # map secret → env
+    steps:
+      - name: Trigger Propagation
+        if: ${{ env.FARM_DISPATCH_TOKEN != '' }}                # gate on env, not secrets
+        uses: peter-evans/repository-dispatch@<sha>
+        with:
+          token: ${{ env.FARM_DISPATCH_TOKEN }}                 # consume via env
+----
