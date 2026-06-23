@@ -1,0 +1,388 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+//
+// Deno.affine — issue #122 host bindings for the Deno-ESM backend.
+//
+// Unlike stdlib/Vscode.affine (issue #35), these externs are NOT a
+// wasm-FFI surface with an Int-handle/readString contract. The
+// `--deno-esm` backend (lib/codegen_deno.ml) is a *direct* AST → ES
+// module transpiler with no wasm boundary, so each `extern fn` below is
+// lowered, at compile time, straight to its host expression:
+//
+//   writeTextFile(p, c)  ->  Deno.writeTextFileSync(p, c)
+//   jsonParse(s)         ->  JSON.parse(s)
+//   dateNow()            ->  Date.now()
+//   ...
+//
+// The lowering table lives in lib/codegen_deno.ml (`deno_builtins`);
+// the non-trivial leaves are emitted inlined into every module's
+// prelude so the output is genuinely drop-in (no runtime adapter, no
+// extra package to resolve). packages/affine-deno/mod.js mirrors the
+// same surface as a standalone ESM module for `deno test`.
+//
+// All FS operations are synchronous (`Deno.*Sync`). `await` on a
+// synchronously-returned value is valid JS, so an async-shaped consumer
+// (e.g. hyperpolymath/ubicity) keeps working without an async-extern
+// ABI (issue #103 — documented future work, not required here).
+//
+// Names here MUST match the `deno_builtins` table keys exactly; an
+// unmatched extern silently falls through to a same-named host symbol.
+
+module Deno;
+
+// ── Opaque host value types ────────────────────────────────────────
+//
+// `Json` is any structured JS value (object/array/string/number/bool/
+// null) crossing the boundary opaquely — the AffineScript side never
+// inspects it, it only routes it between JSON.* and the host. `Bytes`
+// is a Uint8Array; `WasmExports` is an instantiated module's exports.
+
+pub extern type Json;
+pub extern type Bytes;
+pub extern type WasmExports;
+
+// ── Filesystem (synchronous) ───────────────────────────────────────
+
+/// `Deno.writeTextFileSync(path, content)`. Returns 0.
+pub extern fn writeTextFile(path: String, content: String) -> Int;
+
+/// `Deno.readTextFileSync(path)`. Throws on missing file — pair with
+/// `isNotFound` in a `try`/`catch` for the not-found-is-null pattern.
+pub extern fn readTextFile(path: String) -> String;
+
+/// `Deno.readFileSync(path)` — raw bytes (for wasm modules).
+pub extern fn readFileBytes(path: String) -> Bytes;
+
+/// `Deno.removeSync(path)`. Throws if absent (catch + `isNotFound`).
+pub extern fn removePath(path: String) -> Int;
+
+/// `Deno.mkdirSync(path, { recursive: true })`.
+pub extern fn mkdirRecursive(path: String) -> Int;
+
+/// mkdir -p that swallows AlreadyExists (idempotent ensure-directory).
+pub extern fn ensureDir(path: String) -> Int;
+
+/// Names of the *file* entries in `path` (skips sub-directories).
+pub extern fn readDirNames(path: String) -> [String];
+
+/// `Deno.statSync(path).size` in bytes.
+pub extern fn statSize(path: String) -> Int;
+
+/// `Deno.statSync(path).isFile` — true if `path` is a regular file.
+/// Throws on a missing path (pair with `isNotFound` for the absent case).
+pub extern fn statIsFile(path: String) -> Bool;
+
+/// `Deno.statSync(path).isDirectory` — true if `path` is a directory.
+/// Throws on a missing path (pair with `isNotFound` for the absent case).
+pub extern fn statIsDirectory(path: String) -> Bool;
+
+/// Recursive walk under `root` — every file path beneath it, depth-first.
+/// Mirrors `std/fs/walk` for the common case (no glob filter; callers
+/// filter by extension). Throws on a missing root via `Deno.readDirSync`.
+pub extern fn walkRecursive(root: String) -> [String];
+
+// ── Bytes I/O (construction + LE getters/setters) ──────────────────
+//
+// Construction + per-field read/write at byte offsets. Companion to
+// the read-only `bytesLength` / `bytesByteAt` / `bytesAsciiSlice`
+// accessors (campaign #239 STEP 3 / standards#242). All multi-byte
+// integer variants are little-endian — the estate's C ABI contracts
+// (raze-tui `raze-events.ads`, Idris2 `Events.idr`) are LE-pinned.
+//
+// Setters return `Int = 0` so they compose in expression-statement
+// position; the caller is responsible for the buffer-bounds invariant
+// (an out-of-range offset throws `RangeError` at the host boundary).
+// Bounds-check via `bytesLength` from STEP 3.
+
+/// `new Uint8Array(n)` — zeroed buffer of `n` bytes.
+pub extern fn bytes_new(n: Int) -> Bytes;
+
+/// `new Uint8Array(n).fill(byte & 0xFF)` — all-`byte` buffer.
+pub extern fn bytes_fill(n: Int, byte: Int) -> Bytes;
+
+/// Write `v & 0xFF` to byte `offset`.
+pub extern fn bytes_set_u8(b: Bytes, offset: Int, v: Int) -> Int;
+
+/// Write `v & 0xFFFF` to bytes `[offset, offset+2)` as little-endian u16.
+pub extern fn bytes_set_u16_le(b: Bytes, offset: Int, v: Int) -> Int;
+
+/// Write `v >>> 0` to bytes `[offset, offset+4)` as little-endian u32.
+pub extern fn bytes_set_u32_le(b: Bytes, offset: Int, v: Int) -> Int;
+
+/// Write `v | 0` to bytes `[offset, offset+4)` as little-endian i32.
+pub extern fn bytes_set_i32_le(b: Bytes, offset: Int, v: Int) -> Int;
+
+/// Read byte at `offset` (0..255).
+pub extern fn bytes_get_u8(b: Bytes, offset: Int) -> Int;
+
+/// Read bytes `[offset, offset+2)` as little-endian u16 (0..65535).
+pub extern fn bytes_get_u16_le(b: Bytes, offset: Int) -> Int;
+
+/// Read bytes `[offset, offset+4)` as little-endian u32 (0..4294967295).
+pub extern fn bytes_get_u32_le(b: Bytes, offset: Int) -> Int;
+
+/// Read bytes `[offset, offset+4)` as little-endian i32 (-2147483648..2147483647).
+pub extern fn bytes_get_i32_le(b: Bytes, offset: Int) -> Int;
+
+// ── Bytes I/O (read-only accessors, STEP 3 / standards#242) ───────
+//
+// Read-only accessors over a `Bytes` buffer. Compile-time lowerings
+// live in lib/codegen_deno.ml `deno_builtins`:
+//   bytesLength(b)         -> (b).length
+//   bytesByteAt(b, i)      -> (b)[i]
+//   bytesAsciiSlice(b,a,c) -> String.fromCharCode(...(b).slice(a, c))
+// These three declarations restore the STEP 3 surface that the codegen
+// has wired since #504 (#52ccaf1) but which never landed in the stdlib
+// module — leaving the resolver unable to satisfy `use Deno::{ ... }`
+// imports that reach for them. The (in-tree) regression test that
+// surfaced this gap is `tests/codegen-deno/deno_scripting_part2.affine`.
+
+/// Length of `b` in bytes (`.length`).
+pub extern fn bytesLength(b: Bytes) -> Int;
+
+/// Byte at `offset` (0..255). Out-of-range reads return JS `undefined`
+/// which coerces to `NaN` on numeric use — bounds-check via `bytesLength`.
+pub extern fn bytesByteAt(b: Bytes, offset: Int) -> Int;
+
+/// Decode `b[a..c)` as if it were ASCII text (each byte becomes one
+/// `char`code). Cheap header-snippet/magic-string extractor; for full
+/// UTF-8 decoding go through a `TextDecoder` extern instead.
+pub extern fn bytesAsciiSlice(b: Bytes, a: Int, c: Int) -> String;
+
+// ── Path ───────────────────────────────────────────────────────────
+
+/// Single-segment join with a `/` separator (idempotent on a trailing
+/// slash). Sufficient for the storage-layout use-case.
+pub extern fn pathJoin(a: String, b: String) -> String;
+
+// ── Error classification ───────────────────────────────────────────
+
+/// `e instanceof Deno.errors.NotFound` — the only error class the
+/// storage layer special-cases (missing file/dir => null/empty).
+pub extern fn isNotFound(e: Json) -> Bool;
+
+// ── JSON ───────────────────────────────────────────────────────────
+
+pub extern fn jsonStringify(v: Json) -> String;
+
+/// `JSON.stringify(v, null, 2)` — the on-disk pretty form.
+pub extern fn jsonStringifyPretty(v: Json) -> String;
+
+pub extern fn jsonParse(s: String) -> Json;
+
+/// JS `null` as an opaque Json (the not-found / absent sentinel).
+pub extern fn jsonNull() -> Json;
+
+/// Opaque field/index read: `value[key]`. The boundary primitive for
+/// treating an arbitrary host JS value as data without the AffineScript
+/// side modelling its shape (e.g. `experience.id`).
+pub extern fn jsonGet(value: Json, key: String) -> Json;
+pub extern fn jsonGetStr(value: Json, key: String) -> String;
+
+/// Nullish default — `x ?? d`. Preserves a JS default parameter when
+/// the caller omits the argument.
+pub extern fn orDefault(x: String, d: String) -> String;
+
+/// Kilobyte display string: `(bytes / 1024).toFixed(2)`. Runtime number
+/// formatting is an honest host primitive (cf. Rust `format!`).
+pub extern fn kbString(bytes: Int) -> String;
+
+// ── Misc host ──────────────────────────────────────────────────────
+
+/// `Date.now()` — epoch millis (used for timestamped report names).
+pub extern fn dateNow() -> Int;
+
+/// `new Date().toISOString()` — UTC ISO-8601 timestamp string
+/// (e.g. `"2026-05-30T12:34:56.789Z"`). Distinct from `dateNow()` which
+/// returns epoch millis as `Int`.
+pub extern fn dateNowIso() -> String;
+
+// ── Module identity ────────────────────────────────────────────────
+
+/// `import.meta.url` — the absolute URL of the importing module. The JS
+/// idiom for "find my own location" (cf. `__dirname` / `__filename`). At
+/// Deno-ESM top level, lowers to the bare `import.meta.url` expression;
+/// callers parse it (`new URL(...)`/`fileURLToPath`/string split) for
+/// directory-relative behaviour.
+pub extern fn importMetaUrl() -> String;
+
+// ── CLI ────────────────────────────────────────────────────────────
+
+/// `Deno.args` — command-line arguments (excludes argv[0]).
+pub extern fn args() -> [String];
+
+/// `Deno.exit(code)` — terminate the process with `code`. Never returns;
+/// the `Int` return type is for type-level compatibility with `if/else`
+/// arms that flow through `exit` in their non-returning branch.
+pub extern fn exit(code: Int) -> Int;
+
+// ── Diagnostics ────────────────────────────────────────────────────
+
+/// `console.error(s)` — write to stderr. (Use `print`/`println` for
+/// stdout.) Returns 0 for chaining.
+pub extern fn consoleError(s: String) -> Int;
+
+// ── Regex ──────────────────────────────────────────────────────────
+
+/// `new RegExp(pat).test(s)` — true iff `s` matches the JS regex source
+/// `pat`. Minimal regex surface; for extraction or replace, add a
+/// specialised extern. Invalid `pat` throws at call time.
+pub extern fn regexMatch(s: String, pat: String) -> Bool;
+
+/// `(Number(bytes) / 1024).toFixed(2)` — kilobyte display string.
+pub extern fn numToFixed2(bytes: Int) -> String;
+
+pub extern fn endsWith(s: String, suffix: String) -> Bool;
+
+/// `s` with a trailing `suffix` removed (no-op if absent).
+pub extern fn stripSuffix(s: String, suffix: String) -> String;
+
+// ── Randomness + high-res clock (STEP 4-B / standards#327) ─────────
+//
+// Compile-time lowerings in lib/codegen_deno.ml `deno_builtins`:
+//   math_random()              -> Math.random()
+//   random_u32()               -> ((Math.random() * 4294967296) >>> 0)
+//   random_in_range(lo, hi)    -> Math.floor(Math.random()*(hi-lo)) + lo
+//   performance_now()          -> performance.now()
+// These declarations restore the STEP 4-B surface that codegen has
+// wired since #509 (319bc84) but which never landed as stdlib externs
+// — leaving `use Deno::{math_random, ...}` unresolvable and the
+// `random_smoke` codegen-deno harness red at compile time.
+//
+// `math_random` is the JS PRNG (NOT cryptographic). For crypto-grade
+// random bytes route through a separate `crypto_random_bytes` extern
+// (different host call: `crypto.getRandomValues`, different threat
+// model — not in scope here).
+
+/// JS PRNG draw in `[0.0, 1.0)`. Non-cryptographic.
+pub extern fn math_random() -> Float;
+
+/// Uniform 32-bit unsigned integer draw, `[0, 2^32)`. Non-cryptographic.
+pub extern fn random_u32() -> Int;
+
+/// Uniform integer draw, `[lo, hi)`. Caller's responsibility to ensure
+/// `lo < hi`; an empty range collapses to `lo` (no error).
+pub extern fn random_in_range(lo: Int, hi: Int) -> Int;
+
+/// `performance.now()` — high-resolution sub-millisecond monotone timer.
+/// Distinct from `dateNow()` (epoch millis, Int) and `dateNowIso()`
+/// (ISO-8601 string). Use for bench / latency-measurement work.
+pub extern fn performance_now() -> Float;
+
+// ── WebAssembly (synchronous instantiate) ──────────────────────────
+
+/// `new WebAssembly.Instance(new WebAssembly.Module(bytes)).exports`.
+pub extern fn wasmInstance(bytes: Bytes) -> WasmExports;
+
+/// `exports[name](...args)` — invoke a named export with a list of
+/// Float arguments. WebAssembly's i32/i64/f32/f64 scalar types all
+/// coerce to JS Number, so a single Float-typed surface covers the
+/// common case (multi-value / void returns are out of scope here —
+/// add a specialised extern when needed). Caller is responsible for
+/// the export existing and having a compatible arity; absent exports
+/// throw `TypeError: ... is not a function` at the host boundary.
+///
+/// Example:
+///
+///     use Deno::{Bytes, WasmExports, wasmInstance, wasmCall};
+///
+///     pub fn addViaWasm(bytes: Bytes, a: Float, b: Float) -> Float = {
+///       let exports = wasmInstance(bytes);
+///       wasmCall(exports, "add", [a, b])
+///     };
+pub extern fn wasmCall(exports: WasmExports, name: String, args: [Float]) -> Float;
+
+// ── WebAssembly typed export call (#455 — Tier 1 #5, Option B) ────
+//
+// Generic `wasm_export_call` covering any wasm signature including i64,
+// multi-typed args, future spec additions. Future-proof: no binding
+// change required as wasm evolves. Tiny addition vs Option A's ~30
+// per-signature variants. Typed wrappers can be layered on top of this
+// generic as ergonomic helpers in a follow-up sub-issue.
+//
+// Trade-off: weaker static safety at the call site — user marshals
+// manually via the `wv_*` constructors and reads via `wv_as_*`. Errors
+// (wrong arity, missing export, type mismatch) deferred to runtime per
+// owner's accepted trade-off in #455 comment.
+//
+// **Encoding decision (2026-05-30):** `WasmValue` lands as an OPAQUE
+// extern type rather than a true AffineScript sum type. Rationale:
+// the JS interop boundary needs a hand-written marshaller that pairs
+// `wv_i32(42) -> { tag: "i32", v: 42 }` with the export-call dispatch
+// `__as_wasm_export_call(exports, name, args)`. Mirrors the existing
+// `WasmExports` opaque pattern. A true sum-type variant on top of this
+// opaque base ships in a follow-up once `json.affine`-style tagged-
+// variant codegen lands for the Deno-ESM backend.
+
+/// Opaque wasm scalar value. Constructed via `wv_i32` / `wv_i64` /
+/// `wv_f32` / `wv_f64`. Read via `wv_as_int` (i32/i64 → Int) or
+/// `wv_as_float` (f32/f64 → Float). The kind tag is opaque to AS code
+/// but inspectable host-side via `wv_kind` for diagnostics.
+pub extern type WasmValue;
+
+/// Wrap an `Int` as a wasm i32. Truncates to the low 32 bits at the
+/// host boundary if `n` exceeds the i32 range.
+pub extern fn wv_i32(n: Int) -> WasmValue;
+
+/// Wrap an `Int` as a wasm i64. Crosses the boundary as a `BigInt`
+/// host-side. Values outside the safe-integer range (>= 2^53) are
+/// preserved as BigInt; arithmetic on the AS side that goes through
+/// `wv_as_int` truncates to the safe-integer range.
+pub extern fn wv_i64(n: Int) -> WasmValue;
+
+/// Wrap a `Float` as a wasm f32. Rounded to f32 precision via
+/// `Math.fround` at the host boundary.
+pub extern fn wv_f32(f: Float) -> WasmValue;
+
+/// Wrap a `Float` as a wasm f64. Preserved at full f64 precision.
+pub extern fn wv_f64(f: Float) -> WasmValue;
+
+/// Read a wasm scalar back as `Int`. Defined for both i32 and i64
+/// variants. For f32/f64, truncates toward zero. Caller is responsible
+/// for knowing the variant — there is no runtime check; reading the
+/// wrong kind silently coerces.
+pub extern fn wv_as_int(v: WasmValue) -> Int;
+
+/// Read a wasm scalar back as `Float`. Defined for both f32 and f64
+/// variants. For i32/i64, converts via JS `Number()` — i64 values
+/// beyond 2^53 lose precision; caller can detect via `wv_kind`.
+pub extern fn wv_as_float(v: WasmValue) -> Float;
+
+/// Return the kind tag ("i32" / "i64" / "f32" / "f64") for runtime
+/// dispatch when the AS-side caller doesn't statically know the
+/// variant. Use sparingly — the typed `wv_as_*` accessors should be
+/// the default path.
+pub extern fn wv_kind(v: WasmValue) -> String;
+
+/// `exports[name](...args)` with typed `WasmValue` marshalling.
+/// Returns a `WasmValue` wrapping the export's return — kind is `f64`
+/// by default (the lossless choice for any numeric return); callers
+/// expecting i32/i64 should rebuild via `wv_i32(wv_as_int(result))`
+/// or inspect `wv_kind` host-side. Multi-value returns are out of
+/// scope at this binding — add a `wasm_export_call_multi` extern when
+/// needed.
+///
+/// Example:
+///
+///     use Deno::{
+///       Bytes, WasmExports, wasmInstance, wasm_export_call,
+///       wv_i32, wv_as_int,
+///     };
+///
+///     pub fn addI32ViaWasm(bytes: Bytes, a: Int, b: Int) -> Int {
+///       let exports = wasmInstance(bytes);
+///       let result = wasm_export_call(
+///         exports, "add", [wv_i32(a), wv_i32(b)]);
+///       wv_as_int(result)
+///     }
+pub extern fn wasm_export_call(
+  exports: WasmExports, name: String, args: [WasmValue]
+) -> WasmValue;
+
+// ── Array helper ───────────────────────────────────────────────────
+//
+// AffineScript has no mutable-array push primitive in this subset;
+// this fluent helper appends and returns the array so accumulation
+// reads functionally: `acc = arrayPush(acc, x)`.
+
+pub extern fn arrayPush(arr: [Json], v: Json) -> [Json];
