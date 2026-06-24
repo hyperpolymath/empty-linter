@@ -1,1 +1,186 @@
-../src/core/ByteDetector.affine
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 hyperpolymath
+
+module ByteDetector;
+
+use prelude::{Option, Some, None};
+use SafeHex::{encode_bytes, encode_string, encode_byte};
+use SafeWhitespace::{detect_invisibles};
+
+pub type Severity = Critical | SevError | Warning | Info;
+
+pub type ArtifactDef = {
+  name: String,
+  byte_value: Int,
+  severity: Severity,
+  fix_action: String
+}
+
+pub type Artifact = {
+  line: Int,
+  column: Int,
+  byte_value: Int,
+  hex_value: String,
+  name: String,
+  severity: Severity,
+  fix_action: String
+}
+
+pub fn known_artifacts() -> [ArtifactDef] {
+  [
+    #{ name: "NULL", byte_value: 0, severity: Critical, fix_action: "remove" },
+    #{ name: "NBSP", byte_value: 160, severity: SevError, fix_action: "replace:20" },
+    #{ name: "ZWSP", byte_value: 8203, severity: SevError, fix_action: "remove" },
+    #{ name: "BOM", byte_value: 65279, severity: Warning, fix_action: "remove" },
+    #{ name: "SHY", byte_value: 173, severity: Info, fix_action: "remove" },
+    #{ name: "LRM", byte_value: 8206, severity: Info, fix_action: "remove" },
+    #{ name: "RLM", byte_value: 8207, severity: Info, fix_action: "remove" },
+    #{ name: "WJ", byte_value: 8288, severity: Info, fix_action: "remove" },
+    #{ name: "ZWNJ", byte_value: 8204, severity: Warning, fix_action: "keep" },
+    #{ name: "ZWJ", byte_value: 8205, severity: Warning, fix_action: "keep" }
+  ]
+}
+
+pub fn get_artifact_def(byte_val: Int) -> Option<ArtifactDef> {
+  let defs = known_artifacts();
+  for d in defs {
+    if d.byte_value == byte_val {
+      return Some(d);
+    }
+  }
+  None
+}
+
+pub fn byte_to_hex(v: Int) -> String {
+  if v <= 255 {
+    encode_byte(v)
+  } else if v <= 65535 {
+    encode_byte((v >> 8) & 255) ++ encode_byte(v & 255)
+  } else {
+    encode_byte((v >> 16) & 255) ++ encode_byte((v >> 8) & 255) ++ encode_byte(v & 255)
+  }
+}
+
+pub fn scan(content: String) -> [Artifact] {
+  let mut results = [];
+  let mut line = 1;
+  let mut col = 1;
+  let n = len(content);
+  let mut i = 0;
+  while i < n {
+    let c = string_get(content, i);
+    let code = char_to_int(c);
+    if code == 10 {
+      line = line + 1;
+      col = 1;
+    } else {
+      match get_artifact_def(code) {
+        Some(def) => {
+          results = results ++ [#{
+            line: line,
+            column: col,
+            byte_value: code,
+            hex_value: byte_to_hex(code),
+            name: def.name,
+            severity: def.severity,
+            fix_action: def.fix_action
+          }];
+          col = col + 1;
+        },
+        None => {
+          col = col + 1;
+        }
+      }
+    }
+    i = i + 1;
+  }
+  results
+}
+
+pub fn scan_to_hex(content: String) -> String {
+  let artifacts = scan(content);
+  let mut lines = "";
+  let mut first = true;
+  for a in artifacts {
+    if !first {
+      lines = lines ++ "\n";
+    }
+    lines = lines ++ "0x" ++ to_uppercase(a.hex_value) ++ " [" ++ a.name ++ "] at L:" ++ int_to_string(a.line) ++ " C:" ++ int_to_string(a.column);
+    first = false;
+  }
+  lines
+}
+
+pub fn apply_fixes(content: String) -> (String, Int) {
+  let mut result = content;
+  let mut count = 0;
+  let defs = known_artifacts();
+  for def in defs {
+    if def.fix_action == "remove" {
+      let parts_count = len(result);
+      let fixed = replace_char(result, def.byte_value, "");
+      let new_count = len(fixed);
+      count = count + (parts_count - new_count);
+      result = fixed;
+    } else if def.fix_action == "replace:20" {
+      result = replace_char(result, def.byte_value, " ");
+    }
+  }
+  (result, count)
+}
+
+fn replace_char(s: String, target_code: Int, replacement: String) -> String {
+  let n = len(s);
+  let mut result = "";
+  let mut i = 0;
+  while i < n {
+    let c = string_get(s, i);
+    let code = char_to_int(c);
+    if code == target_code {
+      result = result ++ replacement;
+    } else {
+      result = result ++ show(c);
+    }
+    i = i + 1;
+  }
+  result
+}
+
+fn severity_order(s: Severity) -> Int {
+  match s {
+    Critical => 4,
+    SevError => 3,
+    Warning => 2,
+    Info => 1
+  }
+}
+
+pub fn filter_by_severity(artifacts: [Artifact], min_severity: Severity) -> [Artifact] {
+  let min_order = severity_order(min_severity);
+  let mut result = [];
+  for a in artifacts {
+    if severity_order(a.severity) >= min_order {
+      result = result ++ [a];
+    }
+  }
+  result
+}
+
+pub fn generate_report(artifacts: [Artifact]) -> String {
+  if len(artifacts) == 0 {
+    "No invisible artifacts detected."
+  } else {
+    let header = "Found " ++ int_to_string(len(artifacts)) ++ " invisible artifact(s):\n";
+    let mut lines = header;
+    for a in artifacts {
+      let sev_str = match a.severity {
+        Critical => "CRITICAL",
+        SevError => "ERROR",
+        Warning => "WARNING",
+        Info => "INFO"
+      };
+      lines = lines ++ "[" ++ sev_str ++ "] " ++ a.name ++ " (0x" ++ to_uppercase(a.hex_value) ++ ") at L:" ++ int_to_string(a.line) ++ " C:" ++ int_to_string(a.column) ++ " - " ++ a.fix_action ++ "\n";
+    }
+    lines
+  }
+}
