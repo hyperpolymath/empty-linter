@@ -33,6 +33,7 @@ concurrency:
 #   pull-requests:  write   — post the findings comment on PRs
 #   contents:       read    — checkout
 permissions:
+  actions: read
   contents: read
   security-events: write
   pull-requests: write
