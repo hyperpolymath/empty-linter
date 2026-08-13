@@ -23,9 +23,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  actions: read
   contents: read
-jobs:
+  security-events: write
+  id-token: writejobs:
   scorecard:
     # The reusable's analysis job declares security-events:write + id-token:write;
     # for a reusable call the caller's grant is the ceiling for the called
