@@ -1,43 +1,20 @@
-# SPDX-License-Identifier: MPL-2.0
-# // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-# SPDX-License-Identifier: MPL-2.0
-# hypatia-scan.yml — thin wrapper calling the shared Hypatia neurosymbolic scan
-# in hyperpolymath/standards (hypatia-scan-reusable.yml) instead of carrying the
-# per-repo copy. Pinned to the same standards commit as governance.yml and
-# scorecard.yml so the estate moves in lockstep. See standards#191 for the
-# reusable's purpose and design.
-#
-# secrets: inherit passes GITHUB_TOKEN and HYPATIA_DISPATCH_PAT through to the
-# reusable — the latter is needed by the gitbot-fleet Phase 2 learning
-# submission (best-effort / non-fatal). The reusable keeps Hypatia advisory:
-# critical findings surface on the code-scanning page (category: hypatia) but
-# do not fail the check; tighten via branch protection, not here (hypatia#213).
+# SPDX-License-Identifier: PMPL-1.0-or-later
 name: Hypatia Security Scan
+
 on:
   push:
     branches: [main, master, develop]
   pull_request:
     branches: [main, master]
   schedule:
-    - cron: '0 0 * * 0' # Weekly on Sunday
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
-# Estate guardrail: cancel superseded runs so re-pushes don't pile up.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-# Caller is the ceiling for the reusable's GITHUB_TOKEN; the single job below
-# inherits these. The reusable needs:
-#   security-events: write  — upload SARIF + read Dependabot alerts
-#   pull-requests:  write   — post the findings comment on PRs
-#   contents:       read    — checkout
 permissions:
   actions: read
   contents: read
-  security-events: write
-  pull-requests: write
+  security-events: read
+
 jobs:
   scan:
-    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@5b1d00229e5e8c0c0fbfedc7e80f37ea50f49236
-    secrets: inherit
+    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@5a93d9d57cc04de4002d6d0ecd336fc7a8698910

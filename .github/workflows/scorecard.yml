@@ -1,39 +1,20 @@
-# SPDX-License-Identifier: MPL-2.0
-# // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-# SPDX-License-Identifier: MPL-2.0
-# scorecard.yml — thin wrapper calling the shared OSSF Scorecard analysis in
-# hyperpolymath/standards (scorecard-reusable.yml) instead of a per-repo copy,
-# matching the governance.yml wrapper. Pinned to the same standards commit as
-# governance.yml so the estate moves in lockstep.
-#
-# scorecard-enforcer.yml deliberately stays standalone: it owns the score
-# threshold gate and the SECURITY.md / pinned-deps checks, which the reusable
-# does not cover.
-name: Scorecards supply-chain security
+# SPDX-License-Identifier: PMPL-1.0-or-later
+name: OSSF Scorecard
+
 on:
-  branch_protection_rule:
+  push:
+    branches: [main, master]
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
-# Estate guardrail: cancel superseded runs so re-pushes / rebased PR
-# updates do not pile up queued runs against the shared account-wide
-# Actions concurrency pool. Applied only to read-only check workflows
-# (no publish/mutation), so cancelling a superseded run is always safe.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+
 permissions:
   contents: read
-  security-events: write
-  id-token: writejobs:
+
+jobs:
   scorecard:
-    # The reusable's analysis job declares security-events:write + id-token:write;
-    # for a reusable call the caller's grant is the ceiling for the called
-    # workflow's GITHUB_TOKEN, so these must be granted here or the SARIF upload
-    # is silently downgraded and fails. (timeout-minutes is intentionally absent:
-    # it is not a permitted key on a reusable-calling job — the reusable owns it.)
+    uses: hyperpolymath/standards/.github/workflows/scorecard-reusable.yml@d7c22711e830e1f383846472f6e9b99debdb201e
     permissions:
       contents: read
       security-events: write
       id-token: write
-    uses: hyperpolymath/standards/.github/workflows/scorecard-reusable.yml@5b1d00229e5e8c0c0fbfedc7e80f37ea50f49236
