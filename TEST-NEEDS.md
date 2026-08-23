@@ -12,11 +12,11 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 |----------|-------|-------|
 | Test directories | 1 | Location(s): /tests |
 | CI workflows | 18 | Running tests on GitHub Actions |
-| Unit tests | Configured | ReScript Jest/Vitest setup |
+| Unit tests | Configured | AffineScript Jest/Vitest setup |
 
 ## What's Covered
 
-- [x] ReScript unit tests
+- [x] AffineScript unit tests
 - [x] JavaScript interop tests
 
 ## Still Missing (for CRG B+)
@@ -29,5 +29,5 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 ## Run Tests
 
 ```bash
-npm run test  # or: rescript build && npm run test
+npm run test  # or: affinescript build && npm run test
 ```

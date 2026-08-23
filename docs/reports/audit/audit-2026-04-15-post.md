@@ -23,7 +23,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 - 1 HTTP (non-HTTPS) URLs in userscript/empty-linter.user.js
 - 14 TODO/FIXME/HACK markers in contractiles/self-validating/template-hunt.k9.ncl
 - 1 unsafe get calls in EmptyLinter.res
-- flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.nix
+- flake.guix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.guix
 
 ## Final Grade
 - **CRG Grade:** D (Promoted from E/X) - CI and lockfiles are in place.

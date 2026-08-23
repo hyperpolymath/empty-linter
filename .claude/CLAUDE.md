@@ -74,7 +74,7 @@ Both are FOSS with independent governance (no Big Tech).
 ### Package Management
 
 - **Primary**: Guix (guix.scm)
-- **Fallback**: Nix (flake.nix)
+- **Fallback**: Guix (flake.guix)
 - **JS deps**: Deno (deno.json imports)
 
 ### Security Requirements
