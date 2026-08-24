@@ -19,7 +19,7 @@ ____
 
 | **Zig** | https://ziglang.org
 | **Deno** | https://deno.land
-| **ReScript** | https://rescript-lang.org
+| **AffineScript** | https://affinescript-lang.org
 | **Idris2 ABI** | https://www.idris-lang.org
 |===
 

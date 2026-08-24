@@ -21,20 +21,20 @@ default:
 # BUILD & COMPILE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Transpile ReScript to JS for Deno runtime
+# Transpile AffineScript to JS for Deno runtime
 build:
     @echo "Building {{project}}..."
-    rescript build
+    affinescript build
 
 # Clean build artifacts
 clean:
     @echo "Cleaning {{project}}..."
-    rescript clean
+    affinescript clean
 
 # Watch mode for development
 dev:
     @echo "Starting watch mode..."
-    rescript build -w
+    affinescript build -w
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TESTING
@@ -141,7 +141,7 @@ doctor:
     check "just"              just      "1.25" 
     check "git"               git       "2.40" 
     check "Deno"              deno      "2.0" 
-    check "ReScript (resc)"   rescript  "12.0" 
+    check "AffineScript (resc)"   affinescript  "12.0" 
     check "Zig"               zig       "0.13" 
 # Optional tools
 if command -v panic-attack >/dev/null 2>&1; then

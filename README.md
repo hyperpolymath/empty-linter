@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2025-2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 
 ![Crap-Overlay](https://img.shields.io/badge/Overlay-Magenta-brightgreen.svg)
-![ReScript](https://img.shields.io/badge/Logic-ReScript-orange.svg)
+![AffineScript](https://img.shields.io/badge/Logic-AffineScript-orange.svg)
 ![Deno](https://img.shields.io/badge/Runtime-Deno-white.svg) ![Idris
 Inside](https://img.shields.io/badge/Idris_Inside-proven-purple.svg)
 
@@ -22,7 +22,7 @@ over hidden "crap-voids."
 
 - **Task Runner:** Managed via `Justfile` (Just).
 
-- **Logic:** Written in ReScript, executed via Deno.
+- **Logic:** Written in AffineScript, executed via Deno.
 
 - **Verification:** Powered by [proven
   library](https://github.com/hyperpolymath/proven) with Idris 2

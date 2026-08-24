@@ -26,7 +26,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
                                  │                 │
                                  ▼                 ▼
                         ┌─────────────────────────────────────────┐
-                        │           LOGIC LAYER (RESCRIPT)        │
+                        │           LOGIC LAYER (AFFINESCRIPT)        │
                         │    (Negative-Space Diagnostics, Fixes)  │
                         │  ┌───────────┐  ┌───────────────────┐  │
                         │  │  Audit    │  │  Correction       │  │
@@ -60,7 +60,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 DIAGNOSTIC CORE
-  Audit Engine (ReScript)           ██████████ 100%    NBSP/ZWSP detection stable
+  Audit Engine (AffineScript)           ██████████ 100%    NBSP/ZWSP detection stable
   Correction Logic                  ██████████ 100%    0xA0 -> 0x20 auto-fix active
   Magenta Crap-Overlay              ████████░░  80%    Offset reporting verified
 
@@ -86,7 +86,7 @@ OVERALL:                            █████████░  ~90%   Alpha
 ## Key Dependencies
 
 ```
-Nickel Config ───► Just Runner ───► Deno Exec ───► ReScript Logic
+Nickel Config ───► Just Runner ───► Deno Exec ───► AffineScript Logic
                                       │                 │
                                       ▼                 ▼
                                  Target FS ◄──── Proven Proofs
