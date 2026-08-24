@@ -2,6 +2,6 @@
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 // Ported via Harvard Engine bulk-processor
 
-module ByteDetector;
+module PathHandler_test;
 
 // TODO: Complete semantic implementation
