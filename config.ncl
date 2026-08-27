@@ -34,6 +34,10 @@ let OutputFormat = [| 'text, 'json, 'hex |] in
     # Known invisible artifacts (uses proven SafeHex for detection)
     artifacts = [
       { name = "NULL", hex = "0x00", severity = 'Critical, fix_action = "remove" },
+      # C0 controls U+0001..U+001F excluding TAB/LF/CR. Illegal in YAML and
+      # fatal to symbolic parsers; a stray 0x08 made a workflow unloadable and
+      # therefore silently non-running. Matched as a RANGE by is_c0_control.
+      { name = "C0-CONTROL", hex = "0x01-0x1F", severity = 'Critical, fix_action = "remove" },
       { name = "NBSP", hex = "0xA0", severity = 'Error, fix_action = "replace:20" },
       { name = "ZWSP", hex = "0x200B", severity = 'Error, fix_action = "remove" },
       { name = "BOM", hex = "0xFEFF", severity = 'Warning, fix_action = "remove" },

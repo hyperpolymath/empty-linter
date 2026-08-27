@@ -41,12 +41,22 @@ pub fn known_artifacts() -> [ArtifactDef] {
   ]
 }
 
+// C0 control characters (U+0001..U+001F) are illegal in YAML and corrupt
+// symbolic parsers. TAB (9), LF (10) and CR (13) are legitimate whitespace
+// and are excluded. NULL (0) keeps its own named entry above.
+pub fn is_c0_control(byte_val: Int) -> Bool {
+  byte_val > 0 && byte_val < 32 && byte_val != 9 && byte_val != 10 && byte_val != 13
+}
+
 pub fn get_artifact_def(byte_val: Int) -> Option<ArtifactDef> {
   let defs = known_artifacts();
   for d in defs {
     if d.byte_value == byte_val {
       return Some(d);
     }
+  }
+  if is_c0_control(byte_val) {
+    return Some(#{ name: "C0-CONTROL", byte_value: byte_val, severity: Critical, fix_action: "remove" });
   }
   None
 }
