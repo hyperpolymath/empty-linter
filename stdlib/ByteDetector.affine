@@ -42,6 +42,12 @@ pub fn known_artifacts() -> [ArtifactDef] {
 }
 
 pub fn get_artifact_def(byte_val: Int) -> Option<ArtifactDef> {
+  if (byte_val >= 1 && byte_val <= 8) || byte_val == 11 || byte_val == 12 || (byte_val >= 14 && byte_val <= 31) {
+    return Some(#{ name: "C0_CONTROL", byte_value: byte_val, severity: Critical, fix_action: "review" });
+  }
+  if byte_val == 127 {
+    return Some(#{ name: "DELETE", byte_value: byte_val, severity: Critical, fix_action: "review" });
+  }
   let defs = known_artifacts();
   for d in defs {
     if d.byte_value == byte_val {

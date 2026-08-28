@@ -88,4 +88,8 @@ deps/
 .cache/
 build/
 dist/
-*.deno.js
+*.bun.js
+# Empty-linter's CI entry point is a reviewed compiler artefact. Keeping this
+# one output makes the audit runnable without installing an unpublished local
+# AffineScript compiler; `just build` regenerates it from the canonical source.
+!src/core/ByteDetector.bun.js

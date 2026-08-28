@@ -28,22 +28,22 @@ verify = true
 [layers.toolchain]
 description = "Build tools and dependencies"
 extends = "base"
-packages = ["deno"]
+packages = ["bun"]
 cache = true
 
 [layers.build]
 description = "empty-linter build"
 extends = "toolchain"
-commands = ["deno cache src/main.ts"]
+commands = ["bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js"]
 
 [layers.runtime]
 description = "Minimal runtime"
 from = "cgr.dev/chainguard/wolfi-base:latest"
-packages = ["ca-certificates", "curl"]
+packages = ["bun", "ca-certificates"]
 copy-from = [
     { layer = "build", src = "/app/", dst = "/app/" },
 ]
-entrypoint = ["/app/bin/deno-run"]
+entrypoint = ["bun", "run", "/app/scripts/empty-lint-ci.js"]
 user = "nonroot"
 
 # ── Security ───────────────────────────────────────────────────

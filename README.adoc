@@ -1,119 +1,92 @@
-image:https://img.shields.io/badge/Overlay-Magenta-brightgreen.svg[Crap-Overlay]
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Empty-linter
+:toc: left
+
 image:https://img.shields.io/badge/Logic-AffineScript-orange.svg[AffineScript]
-image:https://img.shields.io/badge/Runtime-Deno-white.svg[Deno]
-image:https://img.shields.io/badge/Idris_Inside-proven-purple.svg[Idris
-Inside]
+image:https://img.shields.io/badge/Runtime-Bun-black.svg[Bun]
 
-== The Objective
+Empty-linter finds characters and structures that appear empty or invisible but
+can change, corrupt, or cause the rejection of a document. Its originating case
+was a document repeatedly rejected by the IETF Datatracker because an editor had
+inserted a hidden character that was difficult to locate visually.
 
-*empty-linter* is a toolkit designed to see "`what is not there.`" It
-purges invisible artifacts—​NBSPs, Zero-Width spaces, and null bytes—​that
-corrupt file integrity and cause neural-generated character mess to fail
-in symbolic parsers.
+== Current, demonstrated capability
 
-It acts as the "`Eyes`" for agents, enforcing symbolic structural intent
-over hidden "`crap-voids.`"
+The implemented minimum is deliberately smaller than the intended product:
 
-* *Config:* Managed via `+config.ncl+` (Nickel).
-* *Task Runner:* Managed via `+Justfile+` (Just).
-* *Logic:* Written in AffineScript, executed via Deno.
-* *Verification:* Powered by
-https://github.com/hyperpolymath/proven[proven library] with Idris 2
-dependent types.
-* *Deployment:* nerdctl-first, supporting Linux, Minix, macOS, iOS,
-Android, and PC.
-
-== Idris Inside: Mathematically Verified Operations
-
-This project uses the *proven* library for mathematically verified
-operations. The following modules are integrated:
-
-[width="100%",cols="34%,33%,33%",options="header",]
-|===
-|Module |Purpose |Source File
-|SafeHex |Constant-time hex encoding/decoding |`+ByteDetector.res+`
-
-|SafePath |Traversal-proof path validation |`+PathHandler.res+`
-
-|SafeString |XSS/SQL injection prevention |`+TextTransform.res+`
-
-|SafeWhitespace |Text normalization without data loss (NEW)
-|`+TextTransform.res+`
-|===
-
-Operations marked with "`Idris Inside`" have compile-time proofs that
-they cannot crash or corrupt data.
-
-== Crap-Overlay Playbook
-
-[arabic]
-. *Audit:* Identify invisible artifacts.
-. *Highlight:* Magenta-coded reporting of offsets.
-. *Correct:* 0xA0 to 0x20 conversion and ZWSP stripping.
-
-== Quick Start (Bash)
-
-The primary entry point for Bash is provided below. For all other
-supported shells (including `+nushell+`, `+fish+`, `+minix+` `+shell+`,
-`+elvish+`, etc.), please refer to link:docs/SHELLS.adoc[The Multi-Shell
-Registry].
+* the AffineScript detector recognises NUL, unsafe C0 controls, DEL, NBSP,
+  ZWSP, BOM, soft hyphen, LRM/RLM, word joiner, ZWNJ, and ZWJ;
+* the Bun CLI recursively audits a conservative set of text/source extensions;
+* findings include file, one-based line, one-based string column, code point,
+  name, and severity;
+* audit mode never modifies input;
+* exit `0` means the scan completed without a finding at the selected threshold,
+  exit `1` means a policy finding was detected, and exit `2` means the scan did
+  not complete;
+* CI plants clean, critical, advisory, and scan-error cases before auditing this
+  repository; critical findings block, while lower severities are initially
+  advisory.
 
 [source,bash]
 ----
-#!/usr/bin/env bash
-# Primary Bash wrapper for empty-linter
-# Usage: ./bin/empty-linter.sh [directory]
+just build
+just test
+just audit .
 
-TARGET=${1:-"."}
-
-if ! command -v deno &> /dev/null; then
-    echo "Deno not found. Please install Deno to run empty-linter."
-    exit 1
-fi
-
-deno run --allow-read lib/js/src/EmptyLinter.bs.js "$TARGET"
+# Tighten the policy when desired
+bun run scripts/empty-lint-ci.js --threshold warning .
 ----
 
-== Usage via Just
+The reviewed `src/core/ByteDetector.bun.js` artefact is checked in so CI and
+consumers do not depend on an unpublished local compiler. `just build`
+regenerates it from `stdlib/ByteDetector.affine`. AffineScript currently names
+its direct exportable ESM backend `--deno-esm`; that ignored intermediate is
+immediately bundled and tree-shaken by Bun, and no Deno runtime artefact ships.
+A native Bun-labelled AffineScript backend remains an upstream task; see
+https://github.com/hyperpolymath/affinescript/issues/734[AffineScript issue 734].
 
-We prefer the use of `+just+` for all development tasks. Refer to the
-link:cookbook.adoc[Cookbook] for a full list of recipes.
+== Not implemented yet
 
-[source,bash]
-----
-# Run the Magenta crap-overlay report
-just audit
+These are requirements, not delivered claims:
 
-# Sanitise the codebase (Auto-fix voids)
-just correct
-----
+* a TUI and a functioning settings/configuration loader;
+* exact UTF-8 byte offsets and visible context rendering;
+* the broader Unicode/control/bidirectional/tag/variation detector catalogue;
+* Zalgo and suspicious combining-mark analysis;
+* hidden text, zero-size fonts, and Office/OpenXML/PDF/publisher artefacts;
+* spreadsheet formula cells whose displayed result is empty;
+* safe patch generation, review, provenance, and rescan records;
+* automatic repair, transformation profiles, and workspace constraints;
+* Formatrix Docs, Blocky Writer, Docmatrix, Berrywiki, ProgBlocks, Groove,
+  Spline, Cleave, or ForthWall integration;
+* completed Idris proofs for the active scanner and repair path.
 
-== Configuration (Nickel)
+The complete restoration scope and IETF incident fixture are tracked in
+https://github.com/hyperpolymath/empty-linter/issues/74[issue 74].
 
-All structural intent is defined in `+config.ncl+`:
+Commands for unavailable mutating features refuse with a non-zero status. They
+must not be described as demo-complete or silently replaced by inline grep.
 
-[source,nickel]
-----
-{
-  linter = {
-    target_dir = ".",
-    severity = "error",
-    overlay_color = "magenta",
-    auto_fix = true,
-  }
-}
-----
+== Safety direction
 
-== Deployment
+The default product posture is `audit`: inspect and report without mutation.
+Potentially semantic characters such as joiners must not be removed merely
+because they are invisible. Future repair support must produce an inspectable
+plan, preserve an immutable input, record provenance, and independently rescan
+the candidate output.
 
-Deployment is handled via Podman to ensure cross-platform compatibility
-across edge tech and ASICs.
+ForthWall is only a proposed critical-mode bounded execution facility. It must
+remain disconnected or proposal-only until its authority boundary, operation
+semantics, non-interference properties, and independent verifier have been
+proved. Critical mode means narrower authority and more evidence, not more
+aggressive automation.
 
-[source,bash]
-----
-just deploy-nerctl
-----
+== Runtime and build
 
-== Architecture
+The project runtime is Bun. AffineScript is the detector source language and
+Just is the task runner. `mise.toml` describes development tools, but the
+minimum CI audit requires only the checked-in Bun artefact and Bun itself.
 
-See TOPOLOGY for a visual architecture map and completion dashboard.
+See link:TOPOLOGY.adoc[TOPOLOGY] for the implemented boundary and the
+non-implemented expansion map.
