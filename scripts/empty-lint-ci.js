@@ -109,7 +109,9 @@ function shouldScan(path, allFiles) {
 }
 
 async function collectFiles(path, allFiles, files) {
-  const info = await lstat(path);
+  // The caller deliberately grants this local CLI access to each supplied
+  // path. Dynamic filesystem arguments are the scanner's trust boundary.
+  const info = await lstat(path); // nosemgrep
   if (info.isSymbolicLink()) return;
   if (info.isFile()) {
     if (shouldScan(path, allFiles)) files.push(path);
@@ -117,7 +119,7 @@ async function collectFiles(path, allFiles, files) {
   }
   if (!info.isDirectory()) return;
 
-  const entries = await readdir(path, { withFileTypes: true });
+  const entries = await readdir(path, { withFileTypes: true }); // nosemgrep
   entries.sort((left, right) => left.name.localeCompare(right.name));
   for (const entry of entries) {
     if (entry.isDirectory() && DEFAULT_IGNORED_DIRECTORIES.has(entry.name)) continue;
@@ -165,7 +167,7 @@ async function main() {
   let blockingFindings = 0;
   try {
     for (const path of files) {
-      const bytes = await readFile(path);
+      const bytes = await readFile(path); // nosemgrep
       const content = UTF8_DECODER.decode(bytes);
       for (const artifact of scan(content)) {
         findings += 1;

@@ -31,65 +31,68 @@ async function withTempDirectory(operation) {
   }
 }
 
-test("CI scanner passes clean input", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "clean.txt");
-    await writeFile(path, "ordinary text\n", "utf8");
-    const result = await run([path]);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain("0 finding(s)");
-  });
-});
+const scanScenarios = [
+  {
+    name: "passes clean input",
+    filename: "clean.txt",
+    content: "ordinary text\n",
+    code: 0,
+    stream: "stdout",
+    expected: "0 finding(s)",
+  },
+  {
+    name: "fails planted critical input",
+    filename: "unsafe.txt",
+    content: `before${String.fromCodePoint(0)}after`,
+    code: 1,
+    stream: "stdout",
+    expected: "NULL",
+  },
+  {
+    name: "fails a planted non-NUL C0 control",
+    filename: "unsafe-control.txt",
+    content: `before${String.fromCodePoint(7)}after`,
+    code: 1,
+    stream: "stdout",
+    expected: "C0_CONTROL",
+  },
+  {
+    name: "reports advisory input without failing the default gate",
+    filename: "advisory.txt",
+    content: `before${String.fromCodePoint(0x200d)}after`,
+    code: 0,
+    stream: "stdout",
+    expected: "ZWJ",
+  },
+  {
+    name: "preserves and reports a leading BOM",
+    filename: "bom.txt",
+    content: "\uFEFFordinary text\n",
+    code: 0,
+    stream: "stdout",
+    expected: "BOM",
+  },
+  {
+    name: "rejects malformed UTF-8 instead of replacing bytes",
+    filename: "malformed.txt",
+    content: Uint8Array.of(0xc3, 0x28),
+    code: 2,
+    stream: "stderr",
+    expected: "scan failed",
+  },
+];
 
-test("CI scanner fails planted critical input", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "unsafe.txt");
-    await writeFile(path, `before${String.fromCodePoint(0)}after`, "utf8");
-    const result = await run([path]);
-    expect(result.code).toBe(1);
-    expect(result.stdout).toContain("NULL");
+for (const scenario of scanScenarios) {
+  test(`CI scanner ${scenario.name}`, async () => {
+    await withTempDirectory(async (directory) => {
+      const path = join(directory, scenario.filename);
+      await writeFile(path, scenario.content);
+      const result = await run([path]);
+      expect(result.code).toBe(scenario.code);
+      expect(result[scenario.stream]).toContain(scenario.expected);
+    });
   });
-});
-
-test("CI scanner fails a planted non-NUL C0 control", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "unsafe-control.txt");
-    await writeFile(path, `before${String.fromCodePoint(7)}after`, "utf8");
-    const result = await run([path]);
-    expect(result.code).toBe(1);
-    expect(result.stdout).toContain("C0_CONTROL");
-  });
-});
-
-test("CI scanner reports advisory input without failing the default gate", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "advisory.txt");
-    await writeFile(path, `before${String.fromCodePoint(0x200d)}after`, "utf8");
-    const result = await run([path]);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain("ZWJ");
-  });
-});
-
-test("CI scanner preserves and reports a leading BOM", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "bom.txt");
-    await writeFile(path, `\uFEFFordinary text\n`, "utf8");
-    const result = await run([path]);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain("BOM");
-  });
-});
-
-test("CI scanner rejects malformed UTF-8 instead of replacing bytes", async () => {
-  await withTempDirectory(async (directory) => {
-    const path = join(directory, "malformed.txt");
-    await writeFile(path, Uint8Array.of(0xc3, 0x28));
-    const result = await run([path]);
-    expect(result.code).toBe(2);
-    expect(result.stderr).toContain("scan failed");
-  });
-});
+}
 
 test("CI scanner distinguishes an enumeration failure", async () => {
   const result = await run(["definitely-does-not-exist.txt"]);
