@@ -69,8 +69,8 @@ jobs:
         run: |
           COUNT=$(find . \( -name '*.k9' -o -name '*.k9.ncl' \) -not -path './.git/*' | wc -l)
           CONFIG_COUNT=$(find . \( -name '*.toml' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) \
-            -not -path './.git/*' -not -path './node_modules/*' -not -path './.deno/*' \
-            -not -name 'package-lock.json' -not -name 'Cargo.lock' -not -name 'deno.lock' | wc -l)
+            -not -path './.git/*' -not -path './node_modules/*' \
+            -not -name 'package-lock.json' -not -name 'Cargo.lock' -not -name 'bun.lock' | wc -l)
           echo "k9_count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "config_count=$CONFIG_COUNT" >> "$GITHUB_OUTPUT"
           if [ "$COUNT" -eq 0 ] && [ "$CONFIG_COUNT" -gt 0 ]; then
@@ -109,57 +109,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Scan for invisible characters
-        id: lint
-        run: |
-          # Inline invisible character detection (from empty-linter's core patterns).
-          # Checks for: zero-width spaces, zero-width joiners, BOM, soft hyphens,
-          # non-breaking spaces, null bytes, and other invisible Unicode in source files.
-          set +e
-          PATTERNS='\x00|[\x01-\x08\x0B\x0C\x0E-\x1F]|\x{a0}|\x{ad}|\x{200b}|\x{200c}|\x{200d}|\x{200e}|\x{200f}|\x{202a}|\x{202b}|\x{202c}|\x{202d}|\x{202e}|\x{2060}|\x{feff}'
-          find "$GITHUB_WORKSPACE" \
-            -not -path '*/.git/*' -not -path '*/node_modules/*' \
-            -not -path '*/.deno/*' -not -path '*/target/*' \
-            -not -path '*/_build/*' -not -path '*/deps/*' \
-            -not -path '*/external_corpora/*' -not -path '*/.lake/*' \
-            -type f \( -name '*.rs' -o -name '*.ex' -o -name '*.exs' -o -name '*.res' \
-              -o -name '*.js' -o -name '*.ts' -o -name '*.json' -o -name '*.toml' \
-              -o -name '*.yml' -o -name '*.yaml' -o -name '*.md' -o -name '*.adoc' \
-              -o -name '*.idr' -o -name '*.zig' -o -name '*.v' -o -name '*.jl' \
-              -o -name '*.gleam' -o -name '*.hs' -o -name '*.ml' -o -name '*.sh' \) \
-            -exec grep -aPrl "$PATTERNS" {} \; > /tmp/empty-lint-results.txt 2>/dev/null
-          EL_EXIT=$?
-          set -e
-
-          FINDINGS=$(wc -l < /tmp/empty-lint-results.txt 2>/dev/null || echo 0)
-          echo "findings=$FINDINGS" >> "$GITHUB_OUTPUT"
-          echo "exit_code=$EL_EXIT" >> "$GITHUB_OUTPUT"
-          echo "ready=true" >> "$GITHUB_OUTPUT"
-
-          # Emit annotations for each file with invisible chars
-          while IFS= read -r filepath; do
-            [ -z "$filepath" ] && continue
-            REL_PATH="${filepath#$GITHUB_WORKSPACE/}"
-            echo "::warning file=${REL_PATH}::Invisible Unicode characters detected (zero-width space, BOM, NBSP, etc.)"
-          done < /tmp/empty-lint-results.txt
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+      - name: Test the compiled scanner and planted controls
+        # PathHandler and TextTransform remain explicit TODO modules; their
+        # aspirational tests are not evidence for the implemented audit path.
+        run: bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js
+      - name: Audit repository with Empty-linter
+        run: bun run scripts/empty-lint-ci.js --threshold critical .
       - name: Write summary
+        if: always()
         run: |
-          if [ "${{ steps.lint.outputs.ready }}" = "true" ]; then
-            FINDINGS="${{ steps.lint.outputs.findings }}"
-            if [ "$FINDINGS" -gt 0 ] 2>/dev/null; then
-              echo "## Empty-Linter Results" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "Found **${FINDINGS}** invisible character issue(s). See annotations above." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "## Empty-Linter Results" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo ":white_check_mark: No invisible character issues found." >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
-            echo "## Empty-Linter" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Skipped: empty-linter not available." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo "## Empty-linter audit"
+            echo ""
+            echo "The Bun-targeted Empty-linter core was tested with planted no-finding, critical, advisory, BOM, malformed-UTF-8, and enumeration-error cases, then used to audit the repository."
+            echo "Critical findings block this gate; lower-severity Unicode findings are currently advisory."
+          } >> "$GITHUB_STEP_SUMMARY"
   # ---------------------------------------------------------------------------
   # Job 4: Groove manifest check (for repos that should expose services)
   # ---------------------------------------------------------------------------
