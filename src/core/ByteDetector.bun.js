@@ -2,52 +2,16 @@
 // build/ByteDetector.affine.esm.js
 var Some = (value) => ({ tag: "Some", value });
 var None = { tag: "None" };
-var Ok = (value) => ({ tag: "Ok", value });
-var Err = (error) => ({ tag: "Err", error });
 var __as_concat = (a, b) => Array.isArray(a) ? a.concat(b) : a + b;
 var __as_strSub = (s, start, n) => String(s).slice(start, start + n);
 var __as_strGet = (s, i) => String(s)[i];
 var __as_charToInt = (c) => String(c).codePointAt(0);
 var __as_show = (v) => typeof v === "string" ? v : JSON.stringify(v);
-function encode_bytes(bytes) {
-  let result = "";
-  for (const b of bytes) {
-    if (b < 0 || b > 255) {
-      return Err("byte out of range");
-    }
-    result = __as_concat(result, encode_byte(b));
-  }
-  return Ok(result);
-}
-function encode_string(s) {
-  const n = s.length;
-  let result = "";
-  let i = 0;
-  while (i < n) {
-    const code = __as_charToInt(__as_strGet(s, i));
-    result = __as_concat(result, encode_byte(code & 255));
-    i = i + 1;
-  }
-  return result;
-}
 function encode_byte(v) {
   const nibble_hi = v >> 4 & 15;
   const nibble_lo = v & 15;
   const hex = "0123456789abcdef";
   return __as_concat(__as_strSub(hex, nibble_hi, 1), __as_strSub(hex, nibble_lo, 1));
-}
-function detect_invisibles(s) {
-  const n = s.length;
-  let result = [];
-  let i = 0;
-  while (i < n) {
-    const code = __as_charToInt(__as_strGet(s, i));
-    if (is_invisible(code)) {
-      result = __as_concat(result, [code]);
-    }
-    i = i + 1;
-  }
-  return result;
 }
 var Critical = { tag: "Critical" };
 var SevError = { tag: "SevError" };
@@ -221,10 +185,7 @@ export {
   get_artifact_def,
   generate_report,
   filter_by_severity,
-  encode_string,
-  encode_bytes,
   encode_byte,
-  detect_invisibles,
   byte_to_hex,
   apply_fixes,
   Warning,

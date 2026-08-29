@@ -4,8 +4,7 @@
 module ByteDetector;
 
 use prelude::{Option, Some, None};
-use SafeHex::{encode_bytes, encode_string, encode_byte};
-use SafeWhitespace::{detect_invisibles};
+use SafeHex::{encode_byte};
 
 pub type Severity = Critical | SevError | Warning | Info;
 

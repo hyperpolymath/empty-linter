@@ -24,9 +24,9 @@ The implemented minimum is deliberately smaller than the intended product:
 * exit `0` means the scan completed without a finding at the selected threshold,
   exit `1` means a policy finding was detected, and exit `2` means the scan did
   not complete;
-* CI plants clean, critical, advisory, and scan-error cases before auditing this
-  repository; critical findings block, while lower severities are initially
-  advisory.
+* CI plants no-finding, critical, advisory, BOM, malformed-UTF-8, and
+  enumeration-error cases before auditing this repository; critical findings
+  block, while lower severities are initially advisory.
 
 [source,bash]
 ----
@@ -58,6 +58,8 @@ These are requirements, not delivered claims:
 * spreadsheet formula cells whose displayed result is empty;
 * safe patch generation, review, provenance, and rescan records;
 * automatic repair, transformation profiles, and workspace constraints;
+* semantic PathHandler and TextTransform modules (their current source files
+  are explicit TODO placeholders and are not part of the active test gate);
 * Formatrix Docs, Blocky Writer, Docmatrix, Berrywiki, ProgBlocks, Groove,
   Spline, Cleave, or ForthWall integration;
 * completed Idris proofs for the active scanner and repair path.

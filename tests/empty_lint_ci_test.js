@@ -71,6 +71,26 @@ test("CI scanner reports advisory input without failing the default gate", async
   });
 });
 
+test("CI scanner preserves and reports a leading BOM", async () => {
+  await withTempDirectory(async (directory) => {
+    const path = join(directory, "bom.txt");
+    await writeFile(path, `\uFEFFordinary text\n`, "utf8");
+    const result = await run([path]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("BOM");
+  });
+});
+
+test("CI scanner rejects malformed UTF-8 instead of replacing bytes", async () => {
+  await withTempDirectory(async (directory) => {
+    const path = join(directory, "malformed.txt");
+    await writeFile(path, Uint8Array.of(0xc3, 0x28));
+    const result = await run([path]);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain("scan failed");
+  });
+});
+
 test("CI scanner distinguishes an enumeration failure", async () => {
   const result = await run(["definitely-does-not-exist.txt"]);
   expect(result.code).toBe(2);

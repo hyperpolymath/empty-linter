@@ -34,6 +34,19 @@ const SEVERITY_RANK = new Map([
   [Critical, 4],
 ]);
 
+const THRESHOLDS = new Map([
+  ["critical", Critical],
+  ["error", SevError],
+  ["warning", Warning],
+  ["info", Info],
+]);
+
+const UTF8_DECODER = new TextDecoder("utf-8", {
+  fatal: true,
+  // Preserve a leading BOM so the detector can report it.
+  ignoreBOM: true,
+});
+
 function usage() {
   console.log(`Usage: bun run scripts/empty-lint-ci.js [options] [path ...]
 
@@ -56,7 +69,7 @@ function parseArguments(args) {
   const paths = [];
 
   for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
+    const arg = args.at(index);
     if (arg === "--help") {
       usage();
       process.exit(0);
@@ -65,7 +78,7 @@ function parseArguments(args) {
     } else if (arg === "--threshold") {
       index += 1;
       if (index >= args.length) throw new Error("--threshold requires a value");
-      threshold = args[index].toLowerCase();
+      threshold = args.at(index).toLowerCase();
     } else if (arg.startsWith("--threshold=")) {
       threshold = arg.slice("--threshold=".length).toLowerCase();
     } else if (arg.startsWith("-")) {
@@ -75,20 +88,14 @@ function parseArguments(args) {
     }
   }
 
-  const thresholds = {
-    critical: Critical,
-    error: SevError,
-    warning: Warning,
-    info: Info,
-  };
-  if (!(threshold in thresholds)) {
+  if (!THRESHOLDS.has(threshold)) {
     throw new Error(`invalid threshold: ${threshold}`);
   }
 
   return {
     allFiles,
     paths: paths.length === 0 ? ["."] : paths,
-    threshold: thresholds[threshold],
+    threshold: THRESHOLDS.get(threshold),
     thresholdName: threshold,
   };
 }
@@ -158,7 +165,8 @@ async function main() {
   let blockingFindings = 0;
   try {
     for (const path of files) {
-      const content = await readFile(path, "utf8");
+      const bytes = await readFile(path);
+      const content = UTF8_DECODER.decode(bytes);
       for (const artifact of scan(content)) {
         findings += 1;
         const blocking = SEVERITY_RANK.get(artifact.severity) >= SEVERITY_RANK.get(options.threshold);

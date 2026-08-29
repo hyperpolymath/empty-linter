@@ -76,17 +76,17 @@ audit-quick path=".": build
     @bun run scripts/empty-lint-ci.js {{path}}
 
 # Refuse unavailable automatic repair
-fix path=".": build
+fix path=".":
     @echo "empty-linter: automatic repair is not implemented; audit and review findings instead" >&2
     @exit 2
 
 # Refuse unavailable transformations
-transform path: build
+transform path:
     @echo "empty-linter: transformation is not implemented" >&2
     @exit 2
 
 # Refuse unavailable workspace constraints
-check path workspace="twitter": build
+check path workspace="twitter":
     @echo "empty-linter: workspace constraints are not implemented" >&2
     @exit 2
 
@@ -166,7 +166,7 @@ doctor:
     echo ""
     echo "  Result: $PASS passed, $FAIL failed, $WARN warnings"
     if [ "$FAIL" -gt 0 ]; then
-        echo "  Run 'just heal' to attempt automatic repair."
+        echo "  Run 'just heal' to list the missing tools and installation guidance."
         exit 1
     fi
     echo "  All required tools present."
@@ -175,7 +175,7 @@ doctor:
 heal:
     #!/usr/bin/env bash
     echo "═══════════════════════════════════════════════════"
-    echo "  Empty Linter Heal — Automatic Tool Installation"
+    echo "  Empty Linter Heal — Missing Tool Report"
     echo "═══════════════════════════════════════════════════"
     echo ""
     if ! command -v bun >/dev/null 2>&1; then
@@ -185,7 +185,7 @@ heal:
         echo "Just is required. Install it using the estate toolchain instructions."
     fi
     echo ""
-    echo "Heal complete. Run 'just doctor' to verify."
+    echo "Report complete. Install any missing tools, then run 'just doctor' to verify."
 
 # Guided tour of the project structure and key concepts
 tour:
@@ -210,7 +210,7 @@ tour:
     echo ""
     echo "Quick commands:"
     echo "  just doctor    Check toolchain health"
-    echo "  just heal      Fix missing tools"
+    echo "  just heal      Report missing tools"
     echo "  just help-me   Common workflows"
     echo "  just default   List all recipes"
     echo ""

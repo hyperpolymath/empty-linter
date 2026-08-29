@@ -114,6 +114,8 @@ jobs:
         with:
           bun-version: 1.3.14
       - name: Test the compiled scanner and planted controls
+        # PathHandler and TextTransform remain explicit TODO modules; their
+        # aspirational tests are not evidence for the implemented audit path.
         run: bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js
       - name: Audit repository with Empty-linter
         run: bun run scripts/empty-lint-ci.js --threshold critical .
@@ -123,7 +125,7 @@ jobs:
           {
             echo "## Empty-linter audit"
             echo ""
-            echo "The Bun-targeted Empty-linter core was tested with planted clean, critical, advisory, and scan-error cases, then used to audit the repository."
+            echo "The Bun-targeted Empty-linter core was tested with planted no-finding, critical, advisory, BOM, malformed-UTF-8, and enumeration-error cases, then used to audit the repository."
             echo "Critical findings block this gate; lower-severity Unicode findings are currently advisory."
           } >> "$GITHUB_STEP_SUMMARY"
   # ---------------------------------------------------------------------------

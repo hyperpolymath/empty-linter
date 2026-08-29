@@ -16,7 +16,7 @@ src/core/ByteDetector.bun.js ──► scripts/empty-lint-ci.js
             └──────── Bun tests ───────────┤
                                            ▼
                               read-only repository audit
-                              0 clean / 1 finding / 2 error
+                    0 no threshold findings / 1 finding / 2 error
 ....
 
 The workflow tests planted positive and negative controls before trusting the
@@ -31,11 +31,11 @@ files.
 
 | Basic code-point detector
 | Implemented
-| AffineScript type-check plus 17 Bun unit tests
+| AffineScript type-check plus the complete implemented-path Bun test suite
 
 | Repository audit gate
 | Implemented
-| Four end-to-end controls; distinct clean/finding/error exits
+| Seven end-to-end controls; distinct no-finding/finding/error exits
 
 | Bun runtime
 | Implemented for the active path
