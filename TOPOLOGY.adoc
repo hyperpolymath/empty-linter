@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Empty-linter topology and readiness
+
+== Implemented CI path
+
+....
+stdlib/ByteDetector.affine
+            │ AffineScript exportable-ESM intermediate (build-only)
+            ▼
+       Bun bundler
+            │
+            ▼
+src/core/ByteDetector.bun.js ──► scripts/empty-lint-ci.js
+            │                              │
+            └──────── Bun tests ───────────┤
+                                           ▼
+                              read-only repository audit
+                    0 no threshold findings / 1 finding / 2 error
+....
+
+The workflow tests planted positive and negative controls before trusting the
+repository result. It does not suppress scanner errors and does not modify
+files.
+
+== Honest readiness
+
+[cols="2,1,4",options="header"]
+|===
+| Capability | Status | Evidence or remaining work
+
+| Basic code-point detector
+| Implemented
+| AffineScript type-check plus the complete implemented-path Bun test suite
+
+| Repository audit gate
+| Implemented
+| Seven end-to-end controls; distinct no-finding/finding/error exits
+
+| Bun runtime
+| Implemented for the active path
+| Bun-targeted bundled artefact, CLI, tests, and SHA-pinned CI setup
+
+| Full detector catalogue
+| Not implemented
+| Unicode, document-container, hidden-style, spreadsheet, and Zalgo work remains
+
+| Settings and TUI
+| Not implemented
+| Existing Nickel data is not loaded by the active scanner
+
+| Automatic repair
+| Not implemented
+| Must gain conservative plans, approval, provenance, and independent rescan
+
+| Idris-backed scanner proof
+| Not demonstrated
+| Proof obligations must be connected to the active implementation
+
+| Precision-suite integration
+| Not implemented
+| Product-owned Groove capabilities and typed Spline records remain design work
+
+| ForthWall critical execution
+| Not implemented
+| Blocked on explicit proofs and an independent verifier
+|===
+
+No overall completion percentage is published: combining implemented and
+aspirational components into one percentage would imply evidence that does not
+exist.

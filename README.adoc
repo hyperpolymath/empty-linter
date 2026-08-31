@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Empty-linter
+:toc: left
+
+image:https://img.shields.io/badge/Logic-AffineScript-orange.svg[AffineScript]
+image:https://img.shields.io/badge/Runtime-Bun-black.svg[Bun]
+
+Empty-linter finds characters and structures that appear empty or invisible but
+can change, corrupt, or cause the rejection of a document. Its originating case
+was a document repeatedly rejected by the IETF Datatracker because an editor had
+inserted a hidden character that was difficult to locate visually.
+
+== Current, demonstrated capability
+
+The implemented minimum is deliberately smaller than the intended product:
+
+* the AffineScript detector recognises NUL, unsafe C0 controls, DEL, NBSP,
+  ZWSP, BOM, soft hyphen, LRM/RLM, word joiner, ZWNJ, and ZWJ;
+* the Bun CLI recursively audits a conservative set of text/source extensions;
+* findings include file, one-based line, one-based string column, code point,
+  name, and severity;
+* audit mode never modifies input;
+* exit `0` means the scan completed without a finding at the selected threshold,
+  exit `1` means a policy finding was detected, and exit `2` means the scan did
+  not complete;
+* CI plants no-finding, critical, advisory, BOM, malformed-UTF-8, and
+  enumeration-error cases before auditing this repository; critical findings
+  block, while lower severities are initially advisory.
+
+[source,bash]
+----
+just build
+just test
+just audit .
+
+# Tighten the policy when desired
+bun run scripts/empty-lint-ci.js --threshold warning .
+----
+
+The reviewed `src/core/ByteDetector.bun.js` artefact is checked in so CI and
+consumers do not depend on an unpublished local compiler. `just build`
+regenerates it from `stdlib/ByteDetector.affine`. AffineScript currently names
+its direct exportable ESM backend `--deno-esm`; that ignored intermediate is
+immediately bundled and tree-shaken by Bun, and no Deno runtime artefact ships.
+A native Bun-labelled AffineScript backend remains an upstream task; see
+https://github.com/hyperpolymath/affinescript/issues/734[AffineScript issue 734].
+
+== Not implemented yet
+
+These are requirements, not delivered claims:
+
+* a TUI and a functioning settings/configuration loader;
+* exact UTF-8 byte offsets and visible context rendering;
+* the broader Unicode/control/bidirectional/tag/variation detector catalogue;
+* Zalgo and suspicious combining-mark analysis;
+* hidden text, zero-size fonts, and Office/OpenXML/PDF/publisher artefacts;
+* spreadsheet formula cells whose displayed result is empty;
+* safe patch generation, review, provenance, and rescan records;
+* automatic repair, transformation profiles, and workspace constraints;
+* semantic PathHandler and TextTransform modules (their current source files
+  are explicit TODO placeholders and are not part of the active test gate);
+* Formatrix Docs, Blocky Writer, Docmatrix, Berrywiki, ProgBlocks, Groove,
+  Spline, Cleave, or ForthWall integration;
+* completed Idris proofs for the active scanner and repair path.
+
+The complete restoration scope and IETF incident fixture are tracked in
+https://github.com/hyperpolymath/empty-linter/issues/74[issue 74].
+
+Commands for unavailable mutating features refuse with a non-zero status. They
+must not be described as demo-complete or silently replaced by inline grep.
+
+== Safety direction
+
+The default product posture is `audit`: inspect and report without mutation.
+Potentially semantic characters such as joiners must not be removed merely
+because they are invisible. Future repair support must produce an inspectable
+plan, preserve an immutable input, record provenance, and independently rescan
+the candidate output.
+
+ForthWall is only a proposed critical-mode bounded execution facility. It must
+remain disconnected or proposal-only until its authority boundary, operation
+semantics, non-interference properties, and independent verifier have been
+proved. Critical mode means narrower authority and more evidence, not more
+aggressive automation.
+
+== Runtime and build
+
+The project runtime is Bun. AffineScript is the detector source language and
+Just is the task runner. `mise.toml` describes development tools, but the
+minimum CI audit requires only the checked-in Bun artefact and Bun itself.
+
+See link:TOPOLOGY.adoc[TOPOLOGY] for the implemented boundary and the
+non-implemented expansion map.

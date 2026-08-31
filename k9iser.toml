@@ -2,16 +2,16 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # k9iser manifest for empty-linter
-# Empty file linter — Deno-based tool to detect and flag unintentionally empty source files
+# Negative-space diagnostics with a Bun audit runtime
 
 [project]
 name = "empty-linter"
 safety_tier = "hunt"
 
 [[source]]
-path = "deno.json"
-type = "deno"
-output = "generated/k9iser/deno-workspace.k9"
+path = "package.json"
+type = "json"
+output = "generated/k9iser/bun-package.k9"
 
 [[source]]
 path = "Justfile"
@@ -28,5 +28,5 @@ rule = "build.dependencies has no banned_packages"
 severity = "error"
 
 [[constraint]]
-rule = "deno.imports has no npm: specifiers"
+rule = "runtime is bun"
 severity = "error"

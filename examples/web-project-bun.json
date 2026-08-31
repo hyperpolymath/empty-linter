@@ -1,0 +1,13 @@
+{
+  "name": "affinescript-bun-example",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "scripts": {
+    "build": "affinescript compile --deno-esm -o build/app.affine.esm.js src/App.affine && bun build build/app.affine.esm.js --outfile dist/app.bun.js --target bun",
+    "test": "bun test",
+    "serve": "bunx serve ."
+  }
+}

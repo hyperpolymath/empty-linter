@@ -1,0 +1,13 @@
+{
+  "name": "@hyperpolymath/empty-linter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "scripts": {
+    "test": "bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js",
+    "audit": "bun run scripts/empty-lint-ci.js --threshold critical ."
+  }
+}

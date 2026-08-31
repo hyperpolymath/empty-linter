@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 set shell := ["bash", "-uc"]
 set dotenv-load := true
 set positional-arguments := true
@@ -21,20 +21,28 @@ default:
 # BUILD & COMPILE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Transpile ReScript to JS for Deno runtime
+# Compile AffineScript to ESM, then bundle and tree-shake it for Bun. The
+# AffineScript compiler's direct ESM switch is still named --deno-esm; the
+# intermediate stays under ignored build/ and is never the shipped runtime.
 build:
     @echo "Building {{project}}..."
-    rescript build
+    @set -euo pipefail; \
+      compiler="${AFFINESCRIPT_BIN:-affinescript}"; \
+      rm -f build/ByteDetector.affine.esm.js; \
+      "$compiler" check stdlib/ByteDetector.affine; \
+      mkdir -p build; \
+      "$compiler" compile --deno-esm -o build/ByteDetector.affine.esm.js stdlib/ByteDetector.affine; \
+      bun build build/ByteDetector.affine.esm.js --outfile src/core/ByteDetector.bun.js --target bun
 
 # Clean build artifacts
 clean:
     @echo "Cleaning {{project}}..."
-    rescript clean
+    @rm -f build/ByteDetector.affine.esm.js
 
-# Watch mode for development
+# Watch mode is not yet connected to the two-stage Bun build
 dev:
-    @echo "Starting watch mode..."
-    rescript build -w
+    @echo "empty-linter: watch mode is not implemented for the Bun build" >&2
+    @exit 2
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TESTING
@@ -42,18 +50,18 @@ dev:
 
 # Run all tests
 test: build
-    @echo "Running tests..."
-    deno test --allow-read --allow-write tests/
+    @echo "Running implemented core and CI audit tests..."
+    bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js
 
 # Run tests with verbose output
 test-verbose: build
     @echo "Running tests (verbose)..."
-    deno test --allow-read --allow-write tests/ --trace-leaks
+    bun test --verbose tests/ByteDetector_test.js tests/empty_lint_ci_test.js
 
 # Run specific test file
 test-file file: build
     @echo "Running {{file}}..."
-    deno test --allow-read --allow-write tests/{{file}}
+    bun test tests/{{file}}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LINT & FORMAT (The Crap-Overlay)
@@ -61,23 +69,26 @@ test-file file: build
 
 # Audit the project for invisible "crap" voids (Magenta Overlay)
 audit path=".": build
-    @deno run --allow-read src/cli/Main.res.js audit {{path}}
+    @bun run scripts/empty-lint-ci.js {{path}}
 
 # Quick audit using direct module
 audit-quick path=".": build
-    @deno run --allow-read EmptyLinter.res.js {{path}}
+    @bun run scripts/empty-lint-ci.js {{path}}
 
-# Enforce symbolic intent - auto-fix all artifacts
-fix path=".": build
-    @deno run --allow-read --allow-write src/cli/Main.res.js fix {{path}}
+# Refuse unavailable automatic repair
+fix path=".":
+    @echo "empty-linter: automatic repair is not implemented; audit and review findings instead" >&2
+    @exit 2
 
-# Transform text using default options
-transform path: build
-    @deno run --allow-read --allow-write src/cli/Main.res.js transform {{path}}
+# Refuse unavailable transformations
+transform path:
+    @echo "empty-linter: transformation is not implemented" >&2
+    @exit 2
 
-# Check against workspace constraints
-check path workspace="twitter": build
-    @deno run --allow-read src/cli/Main.res.js check -w {{workspace}} {{path}}
+# Refuse unavailable workspace constraints
+check path workspace="twitter":
+    @echo "empty-linter: workspace constraints are not implemented" >&2
+    @exit 2
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DOCUMENTATION
@@ -107,9 +118,10 @@ cookbook:
 # UTILITIES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Generate the multi-shell registry (nushell, fish, minix, etc)
+# Refuse unavailable shell-wrapper generation
 gen-shells:
-    @deno run --allow-write scripts/generate_wrappers.ts
+    @echo "empty-linter: shell-wrapper generation is not implemented" >&2
+    @exit 2
 
 # Run panic-attacker pre-commit scan
 assail:
@@ -140,45 +152,40 @@ doctor:
     }
     check "just"              just      "1.25" 
     check "git"               git       "2.40" 
-    check "Deno"              deno      "2.0" 
-    check "ReScript (resc)"   rescript  "12.0" 
+    check "Bun"               bun       "1.3"
+    check "AffineScript"       affinescript  "0.1"
     check "Zig"               zig       "0.13" 
-# Optional tools
-if command -v panic-attack >/dev/null 2>&1; then
-    echo "  [OK]   panic-attack — available"
-    PASS=$((PASS + 1))
-else
-    echo "  [WARN] panic-attack — not found (pre-commit scanner)"
-    WARN=$((WARN + 1))
-fi
+    # Optional tools
+    if command -v panic-attack >/dev/null 2>&1; then
+        echo "  [OK]   panic-attack — available"
+        PASS=$((PASS + 1))
+    else
+        echo "  [WARN] panic-attack — not found (pre-commit scanner)"
+        WARN=$((WARN + 1))
+    fi
     echo ""
     echo "  Result: $PASS passed, $FAIL failed, $WARN warnings"
     if [ "$FAIL" -gt 0 ]; then
-        echo "  Run 'just heal' to attempt automatic repair."
+        echo "  Run 'just heal' to list the missing tools and installation guidance."
         exit 1
     fi
     echo "  All required tools present."
 
-# Attempt to automatically install missing tools
+# Report missing tools without installing software
 heal:
     #!/usr/bin/env bash
     echo "═══════════════════════════════════════════════════"
-    echo "  Empty Linter Heal — Automatic Tool Installation"
+    echo "  Empty Linter Heal — Missing Tool Report"
     echo "═══════════════════════════════════════════════════"
     echo ""
-if ! command -v deno >/dev/null 2>&1; then
-    echo "Installing Deno..."
-    curl -fsSL https://deno.land/install.sh | sh
-fi
-# Install Deno dependencies
-echo "Installing Deno dependencies..."
-deno install 2>/dev/null || true
-if ! command -v just >/dev/null 2>&1; then
-    echo "Installing just..."
-    cargo install just 2>/dev/null || echo "Install just from https://just.systems"
-fi
+    if ! command -v bun >/dev/null 2>&1; then
+        echo "Bun is required. Install it using the estate toolchain instructions."
+    fi
+    if ! command -v just >/dev/null 2>&1; then
+        echo "Just is required. Install it using the estate toolchain instructions."
+    fi
     echo ""
-    echo "Heal complete. Run 'just doctor' to verify."
+    echo "Report complete. Install any missing tools, then run 'just doctor' to verify."
 
 # Guided tour of the project structure and key concepts
 tour:
@@ -203,7 +210,7 @@ tour:
     echo ""
     echo "Quick commands:"
     echo "  just doctor    Check toolchain health"
-    echo "  just heal      Fix missing tools"
+    echo "  just heal      Report missing tools"
     echo "  just help-me   Common workflows"
     echo "  just default   List all recipes"
     echo ""
@@ -216,20 +223,19 @@ help-me:
     echo "  Empty Linter — Common Workflows"
     echo "═══════════════════════════════════════════════════"
     echo ""
-echo "FIRST TIME SETUP:"
-echo "  just doctor           Check toolchain"
-echo "  just heal             Fix missing tools"
-echo "" 
+    echo "FIRST TIME SETUP:"
+    echo "  just doctor           Check toolchain"
+    echo "  just heal             Report missing tools"
+    echo ""
     echo "DEVELOPMENT:" 
-    echo "  deno task dev         Development server" 
-    echo "  deno test             Run tests" 
+    echo "  bun test              Run implemented tests"
     echo "" 
-echo "PRE-COMMIT:"
-echo "  just assail           Run panic-attacker scan"
-echo ""
-echo "LEARN:"
-echo "  just tour             Guided project tour"
-echo "  just default          List all recipes" 
+    echo "PRE-COMMIT:"
+    echo "  just assail           Run panic-attacker scan"
+    echo ""
+    echo "LEARN:"
+    echo "  just tour             Guided project tour"
+    echo "  just default          List all recipes"
 
 
 # Print the current CRG grade (reads from READINESS.md '**Current Grade:** X' line)

@@ -1,0 +1,78 @@
+== Empty Linter - VSCode Extension
+
+Detect and fix invisible Unicode artifacts in your code and text files.
+
+=== Features
+
+* *Real-time Detection*: Automatically scans documents for invisible
+characters (NBSP, ZWSP, BOM, NULL, etc.)
+* *Visual Highlighting*: Highlights invisible characters with a distinct
+background color
+* *Quick Fixes*: One-click fixes via Code Actions (lightbulb menu)
+* *Status Bar*: Shows artifact count in the status bar
+* *Workspace Scanning*: Scan entire workspace for invisible characters
+* *Configurable Severity*: Customize how different artifact types are
+reported
+
+=== Detected Artifacts
+
+==== Critical (Security/Corruption Risk)
+
+* NULL byte (U+0000)
+* BOM (U+FEFF)
+* Bidirectional text controls (CVE-2021-42574)
+
+==== Error (Usually Unwanted)
+
+* Non-Breaking Space (U+00A0)
+* Zero Width Space (U+200B)
+* Zero Width Joiner/Non-Joiner
+
+==== Warning (Context Dependent)
+
+* Soft Hyphen (U+00AD)
+* Line/Paragraph Separators
+
+==== Info (Exotic Spaces)
+
+* En/Em Space, Thin Space, Hair Space
+* Figure Space, Ideographic Space
+
+=== Commands
+
+* `+Empty Linter: Scan Current Document+` (Ctrl+Shift+E)
+* `+Empty Linter: Fix Current Document+` (Ctrl+Shift+F)
+* `+Empty Linter: Scan Workspace+`
+* `+Empty Linter: Toggle Artifact Highlighting+`
+* `+Empty Linter: Show Document Metrics+`
+
+=== Configuration
+
+[source,json]
+----
+{
+  "emptyLinter.enabled": true,
+  "emptyLinter.scanOnSave": true,
+  "emptyLinter.scanOnOpen": true,
+  "emptyLinter.autoFix": false,
+  "emptyLinter.highlightArtifacts": true,
+  "emptyLinter.severity.critical": "Error",
+  "emptyLinter.severity.error": "Warning",
+  "emptyLinter.severity.warning": "Information",
+  "emptyLinter.severity.info": "Hint",
+  "emptyLinter.excludePatterns": ["**/node_modules/**", "**/dist/**"],
+  "emptyLinter.statusBar.show": true,
+  "emptyLinter.statusBar.showMetrics": false
+}
+----
+
+=== License
+
+MPL-2.0
+
+=== Credits
+
+Part of the https://github.com/hyperpolymath/empty-linter[empty-linter]
+project by Hyperpolymath.
+
+Uses proven-verified artifact detection patterns.

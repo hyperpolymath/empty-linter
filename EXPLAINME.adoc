@@ -18,8 +18,8 @@ ____
 | Technology | Learn More
 
 | **Zig** | https://ziglang.org
-| **Deno** | https://deno.land
-| **ReScript** | https://rescript-lang.org
+| **Bun** | https://bun.sh
+| **AffineScript** | https://affinescript-lang.org
 | **Idris2 ABI** | https://www.idris-lang.org
 |===
 
@@ -39,8 +39,14 @@ https://github.com/hyperpolymath/gossamer[gossamer].
 | `src/` | Source code
 | `lib/` | Library code
 | `ffi/` | Foreign function interface
-| `test(s)/` | Test suite
+| `tests/` | Bun test suite
+| `scripts/empty-lint-ci.js` | Implemented read-only repository audit CLI
+| `src/core/ByteDetector.bun.js` | Reviewed Bun-targeted compiler artefact
 |===
+
+The current receipt covers the basic detector and audit gate only. The TUI,
+settings loader, document-container detectors, automatic repair, and proof
+integration remain open work and are not implied by this file.
 
 == Questions?
 

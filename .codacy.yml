@@ -1,0 +1,5 @@
+---
+# The Bun file is compiler output from stdlib/ByteDetector.affine. Review the
+# AffineScript source and regenerate this representation with `just build`.
+exclude_paths:
+  - "src/core/ByteDetector.bun.js"
