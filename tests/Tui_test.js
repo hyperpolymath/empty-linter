@@ -68,7 +68,7 @@ test("model: severity floor keys filter and toggle", () => {
   let state = makeState();
   state = reduce(state, { name: "3" }); // error and above
   expect(state.severityFloor).toBe("error");
-  expect(visibleFindings(state).map((r) => r.finding.name).sort()).toEqual(["NBSP", "RLO"]);
+  expect(visibleFindings(state).map((r) => r.finding.name).sort((a, b) => a.localeCompare(b))).toEqual(["NBSP", "RLO"]);
   state = reduce(state, { name: "3" });
   expect(state.severityFloor).toBeNull();
 });

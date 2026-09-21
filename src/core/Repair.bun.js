@@ -49,7 +49,9 @@ function canonicalJson(value) {
   // Deterministic key-ordered serialisation for settings digests / plan hashes.
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
   if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(",")}}`;
+    const keys = Object.keys(value).sort((a, b) => a.localeCompare(b));
+    const parts = keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`);
+    return `{${parts.join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -300,7 +302,7 @@ export function verifyCopy({ plan, outputBytes, outputText, rescanFn, now = new 
 
   // After edits, kept findings shift position; compare by (name, context)
   // rather than raw byte offset. Conservative: count and names must match.
-  const expectedNames = [...expectedKeys].map((k) => k.split("@")[0]).sort();
+  const expectedNames = [...expectedKeys].map((k) => k.split("@")[0]).sort((a, b) => a.localeCompare(b));
   const actualNames = findings.map((f) => f.name).sort();
   const unexpected = [];
   const unexpectedCount = countDifferences(actualNames, expectedNames);

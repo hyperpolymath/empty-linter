@@ -53,7 +53,7 @@ export async function collectFiles(paths, { extensions = null, allFiles = false,
   for (const path of paths) {
     await collect(path, files, { wanted, allFiles, ignoredDirectories });
   }
-  files.sort();
+  files.sort((a, b) => a.localeCompare(b));
   return files;
 }
 

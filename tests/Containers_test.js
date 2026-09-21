@@ -235,7 +235,7 @@ test("hidden styles: markup flags zero-size fonts as warnings, css as info", () 
 test("hidden styles: transparent text, display none, offscreen indent, positions", () => {
   const html = `<div style="color:transparent">a</div>\n<span style="text-indent:-9999px">b</span>`;
   const findings = scanHiddenStyles(html, ".html");
-  const names = findings.map((f) => f.name).sort();
+  const names = findings.map((f) => f.name).sort((a, b) => a.localeCompare(b));
   expect(names).toContain("HIDDEN_STYLE_TRANSPARENT");
   expect(names).toContain("HIDDEN_STYLE_OFFSCREEN_INDENT");
   expect(findings.find((f) => f.name === "HIDDEN_STYLE_OFFSCREEN_INDENT").line).toBe(2);

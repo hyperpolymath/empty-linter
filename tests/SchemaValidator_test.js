@@ -92,7 +92,7 @@ test("schema stability: diagnostic $id and key inventory are pinned", () => {
   const s = schema("diagnostic.v1.json");
   expect(s.$id).toBe("https://hyperpolymath.dev/schemas/empty-linter/diagnostic.v1.json");
   expect(s.required).toContain("findings");
-  const findingProps = Object.keys(s.properties.findings.items.properties).sort();
+  const findingProps = Object.keys(s.properties.findings.items.properties).sort((a, b) => a.localeCompare(b));
   expect(findingProps).toContain("byte_offset");
   expect(findingProps).toContain("column");
   expect(findingProps).toContain("safety");
