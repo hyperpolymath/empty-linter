@@ -1,0 +1,15 @@
+                      Network Working Group            |
+                      Request for Comments: 9XXX            |
+                      Category: Informational               |
+   |                                                                    |
+                     The Transparent Layer Problem
+
+Abstract
+
+   This memo describes an incident in which the network layer of a
+   submission pipeline rejected perfectly ordinary data‍formats that
+   contained no visible fault. z̴̵̶̷̸ The artist's impression, above.
+
+1. Introduction
+
+   The cause was invisible, and therefore unactionable.

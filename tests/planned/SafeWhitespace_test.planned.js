@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// PLANNED API SPEC — not part of the active gate. These describe the intended
+// surface of modules whose .affine sources are still TODO stubs. They must not
+// be run as evidence of capability (issue #74 truth conditions).
 import { test } from "bun:test";
 import {
   LF, CRLF, CR,

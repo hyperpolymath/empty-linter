@@ -1,119 +1,64 @@
 // SPDX-License-Identifier: MPL-2.0
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-import { test } from "bun:test";
-import {
-  default_options, transform, transform_default,
-  get_metrics, metrics_to_string,
-  check_constraints, format_for_html, format_for_js,
-} from "../src/core/TextTransform.bun.js";
-import { LF, CRLF } from "../stdlib/SafeWhitespace.bun.js";
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+//
+// TextTransform replaces the TODO TextTransform.affine module with an
+// implemented path. Transforms only ever run on the apply-to-copy domain.
 
-function assert(condition, message = "assertion failed") {
-  if (!condition) throw new Error(message);
-}
+import { expect, test } from "bun:test";
+import { applyProfile, checkConstraints } from "../src/core/TextTransform.bun.js";
+import { defaultSettings } from "../src/core/Settings.bun.js";
 
-function assertEquals(actual, expected) {
-  if (!Object.is(actual, expected)) throw new Error(`expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-}
+const profiles = defaultSettings().transform;
 
-test("TextTransform: transform trims lines when option set", () => {
-  const opts = { ...default_options(), trim_document: false, ensure_final_newline: false };
-  const result = transform("  hello  \n  world  ", opts);
-  assertEquals(result.includes("  hello"), false);
+test("profile: trim_lines removes trailing spaces and tabs", () => {
+  const { text, changes } = applyProfile("a  \nb\t\n", { ...profiles.minimal, trim_lines: true });
+  expect(text.startsWith("a\nb\n")).toBe(true);
+  expect(changes[0]).toEqual({ kind: "trim_lines", detail: 2 });
 });
 
-test("TextTransform: transform collapses spaces", () => {
-  const opts = { ...default_options(), trim_document: false, ensure_final_newline_opt: false, collapse_spaces_opt: true };
-  const result = transform("hello    world", opts);
-  assertEquals(result.includes("    "), false);
+test("profile: collapse_spaces preserves indentation", () => {
+  const { text } = applyProfile("    code   goes   here  \n", { ...profiles.minimal, trim_lines: false, collapse_spaces: true });
+  expect(text).toBe("    code goes here \n"); // indent kept; interior/trailing runs → one space
 });
 
-test("TextTransform: transform normalizes CRLF to LF", () => {
-  const opts = { ...default_options(), target_line_ending: LF };
-  const result = transform("line1\r\nline2\r\nline3", opts);
-  assertEquals(result.includes("\r\n"), false);
-  assertEquals(result.includes("\r"), false);
+test("profile: normalize_line_endings to LF", () => {
+  const { text, changes } = applyProfile("a\r\nb\rc\n", profiles.default);
+  expect(text).toContain("a\nb\nc\n");
+  expect(changes.some((c) => c.kind === "normalize_line_endings")).toBe(true);
 });
 
-test("TextTransform: transform normalizes LF to CRLF", () => {
-  const opts = { ...default_options(), target_line_ending: CRLF, ensure_final_newline_opt: false };
-  const result = transform("line1\nline2", opts);
-  assertEquals(result.includes("\r\n"), true);
+test("profile: max_blank_lines caps runs", () => {
+  const input = "a\n\n\n\n\nb\n";
+  const { text } = applyProfile(input, { ...profiles.minimal, max_blank_lines: 1, trim_document: false });
+  expect(text).toBe("a\n\nb\n");
 });
 
-test("TextTransform: transform collapses excess blank lines", () => {
-  const opts = { ...default_options(), max_blank_lines: 1, ensure_final_newline: false };
-  const result = transform("para1\n\n\n\n\npara2", opts);
-  assertEquals(result.includes("\n\n\n"), false);
+test("profile: strict profile composition", () => {
+  const input = "\n\n  hello   world  \n\n\n\n\nbye\r\n";
+  const { text } = applyProfile(input, profiles.strict);
+  // trim_lines keeps leading indent, collapses blanks to 1, trims document ends.
+  expect(text).toBe("  hello world\n\nbye\n");
 });
 
-test("TextTransform: transform ensures final newline", () => {
-  const opts = { ...default_options(), ensure_final_newline: true };
-  assertEquals(transform("no newline", opts).endsWith("\n"), true);
+test("profile: ensure_final_newline adds exactly one", () => {
+  const { text } = applyProfile("no newline", profiles.default);
+  expect(text.endsWith("\n")).toBe(true);
+  expect(text.endsWith("\n\n")).toBe(false);
 });
 
-test("TextTransform: transform_default returns a string", () => {
-  const result = transform_default("  test  ");
-  assertEquals(typeof result, "string");
+test("profile: CRLF target honoured", () => {
+  const { text } = applyProfile("a\nb\n", { ...profiles.minimal, normalize_line_endings: true, target_line_ending: "CRLF" });
+  expect(text).toContain("a\r\nb\r\n");
 });
 
-test("TextTransform: get_metrics counts chars", () => {
-  assertEquals(get_metrics("Hello World").chars, 11);
+test("constraints: empty displayed results and limit breaches are findings", () => {
+  const violations = checkConstraints("one two three\nfour\n", { max_words: 2, max_lines: 1, max_chars: 5 }, "twitter");
+  expect(violations.length).toBe(3);
+  expect(violations.every((v) => v.severity === "warning")).toBe(true);
+  expect(violations.every((v) => v.safety === "semantic")).toBe(true);
+  expect(violations[0].description).toContain("twitter");
 });
 
-test("TextTransform: get_metrics counts words", () => {
-  assertEquals(get_metrics("Hello World Test").words, 3);
-});
-
-test("TextTransform: get_metrics counts lines", () => {
-  assertEquals(get_metrics("Line 1\nLine 2\nLine 3").lines, 3);
-});
-
-test("TextTransform: metrics_to_string includes char count", () => {
-  const m = get_metrics("Hello World");
-  const s = metrics_to_string(m);
-  assertEquals(s.includes("11"), true);
-});
-
-test("TextTransform: check_constraints detects char limit exceeded", () => {
-  const c = { max_chars: { tag: "Some", value: 5 }, max_words: { tag: "None" }, max_lines: { tag: "None" }, max_bytes: { tag: "None" } };
-  const violations = check_constraints("This is a long string", c);
-  assert(violations.length > 0);
-});
-
-test("TextTransform: check_constraints passes when within limit", () => {
-  const c = { max_chars: { tag: "Some", value: 100 }, max_words: { tag: "None" }, max_lines: { tag: "None" }, max_bytes: { tag: "None" } };
-  assertEquals(check_constraints("Short", c).length, 0);
-});
-
-test("TextTransform: check_constraints detects word limit exceeded", () => {
-  const c = { max_chars: { tag: "None" }, max_words: { tag: "Some", value: 3 }, max_lines: { tag: "None" }, max_bytes: { tag: "None" } };
-  const violations = check_constraints("one two three four five", c);
-  assert(violations.length > 0);
-});
-
-test("TextTransform: check_constraints detects line limit exceeded", () => {
-  const c = { max_chars: { tag: "None" }, max_words: { tag: "None" }, max_lines: { tag: "Some", value: 2 }, max_bytes: { tag: "None" } };
-  const violations = check_constraints("a\nb\nc\nd", c);
-  assert(violations.length > 0);
-});
-
-test("TextTransform: format_for_html escapes < and >", () => {
-  const result = format_for_html("<script>xss</script>");
-  assertEquals(result.includes("<script>"), false);
-  assertEquals(result.includes("&lt;"), true);
-});
-
-test("TextTransform: format_for_html escapes &", () => {
-  assertEquals(format_for_html("a & b").includes("&amp;"), true);
-});
-
-test("TextTransform: format_for_js escapes newlines", () => {
-  const result = format_for_js("line1\nline2");
-  assertEquals(result.includes("\\n"), true);
-});
-
-test("TextTransform: format_for_js escapes double quotes", () => {
-  const result = format_for_js('say "hello"');
-  assertEquals(result.includes('\\"'), true);
+test("constraints: within limits is clean", () => {
+  expect(checkConstraints("short text\n", { max_words: 8, max_lines: 2, max_chars: 100 }, "x").length).toBe(0);
 });
