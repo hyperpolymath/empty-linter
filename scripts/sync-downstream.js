@@ -56,7 +56,7 @@ export function renderTable(name, family) {
   const lines = [`${BEGIN} (${family})`, `const ${name} = {`];
   for (const entry of entries) {
     const key = `0x${entry.code_point.toString(16).toUpperCase()}`;
-    const description = entry.description.replace(/'/g, "\\'");
+    const description = entry.description.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     lines.push(
       `    ${key}: { name: '${entry.name}', severity: '${entry.severity}', description: '${description}' },`,
     );
