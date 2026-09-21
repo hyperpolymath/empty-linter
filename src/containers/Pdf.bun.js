@@ -171,7 +171,7 @@ function latin1(bytes) {
   let out = "";
   const chunk = 8192;
   for (let i = 0; i < bytes.length; i += chunk) {
-    out += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    out += String.fromCodePoint(...bytes.subarray(i, i + chunk));
   }
   return out;
 }

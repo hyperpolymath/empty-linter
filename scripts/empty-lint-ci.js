@@ -18,7 +18,7 @@
 // its stable, read-only, audit-only front.
 
 import { collectFiles, scanFile, ScanError } from "../src/core/ScannerIO.bun.js";
-import { atOrAbove, githubAnnotation, SEVERITY_RANK } from "../src/core/Report.bun.js";
+import { atOrAbove, githubAnnotation } from "../src/core/Report.bun.js";
 import { hex } from "../src/core/UnicodeData.bun.js";
 
 const EXIT_FINDINGS = 1;

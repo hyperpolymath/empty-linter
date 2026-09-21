@@ -116,5 +116,5 @@ export function githubAnnotation(path, finding, blocking) {
 }
 
 function escapeWorkflowData(value) {
-  return String(value).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  return String(value).replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
 }

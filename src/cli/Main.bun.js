@@ -19,13 +19,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
-import { collectFiles, scanFile, applyDetectorToggles, DEFAULT_IGNORED_DIRECTORIES, CONTAINER_EXTENSIONS, ScanError } from "../core/ScannerIO.bun.js";
+import { collectFiles, scanFile, applyDetectorToggles, DEFAULT_IGNORED_DIRECTORIES, ScanError } from "../core/ScannerIO.bun.js";
 import { defaultSettings, loadSettingsFile, SettingsError } from "../core/Settings.bun.js";
 import { CATALOGUE_VERSION, forCodePoint, hex } from "../core/UnicodeData.bun.js";
 import { renderVisible } from "../core/Render.bun.js";
 import {
   atOrAbove, diagnosticRecord, formatHexReport, formatTextReport,
-  githubAnnotation, severityRank, THRESHOLDS,
+  githubAnnotation, THRESHOLDS,
 } from "../core/Report.bun.js";
 import {
   approvePlan, applyPlanToCopy, proposePlan, provenanceRecord, refusePlan,
@@ -474,8 +474,8 @@ async function cmdVerify(paths, flags, io) {
     }
     // Independent rescan: finding names must be exactly the plan's kept set.
     const { findings } = scanText(outputText, {});
-    const expectedNames = (prov.kept ?? []).map((k) => k.name).sort();
-    const actualNames = findings.map((f) => f.name).sort();
+    const expectedNames = (prov.kept ?? []).map((k) => k.name).sort((a, b) => a.localeCompare(b));
+    const actualNames = findings.map((f) => f.name).sort((a, b) => a.localeCompare(b));
     const unexpected = [];
     {
       const counts = new Map();

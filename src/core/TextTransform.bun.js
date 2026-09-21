@@ -29,8 +29,8 @@ export function applyProfile(text, profile) {
   if (profile.normalize_line_endings) {
     const target = LINE_ENDING_TEXT[profile.target_line_ending] ?? "\n";
     const before = out;
-    out = out.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    if (target !== "\n") out = out.replace(/\n/g, target);
+    out = out.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+    if (target !== "\n") out = out.replaceAll("\n", target);
     if (out !== before) changes.push({ kind: "normalize_line_endings", detail: profile.target_line_ending });
   }
 

@@ -39,6 +39,14 @@
 == Still missing (for CRG B+)
 
 * [ ] Code coverage reports (codecov integration)
+* [ ] Cognitive-complexity debt (SonarCloud, new code on PR #94):
+      `SchemaValidator` validate (54), `UnicodeData forCodePoint` (31),
+      `Pdf` scan (29), `Tui model` (26), `Ooxml` scan (24),
+      `Repair applyPlanToCopy` (22), `empty-lint-ci` audit (17) — each > 15
+      allowed. Deferred deliberately: these are the most behaviour-pinned
+      functions in the repo; refactors land with dedicated coverage, not
+      rushed cosmetically. Reliability issues from the same report were fixed
+      in this gate round.
 * [ ] Fuzz/property tests for the scanner and the Nickel-subset parser
       (surrogate-pair boundaries, malformed config syntax)
 * [ ] Golden-file snapshot tests for TUI frames beyond the pinned pins

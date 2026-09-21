@@ -7,7 +7,6 @@
 // and answered with exactly one event.
 
 import { collectFiles, scanFile, applyDetectorToggles, DEFAULT_IGNORED_DIRECTORIES } from "../core/ScannerIO.bun.js";
-import { defaultSettings } from "../core/Settings.bun.js";
 import { CATALOGUE_VERSION } from "../core/UnicodeData.bun.js";
 import { approvePlan, applyPlanToCopy, proposePlan, provenanceRecord, verifyCopy } from "../core/Repair.bun.js";
 import { scanText } from "../core/ScalarScanner.bun.js";

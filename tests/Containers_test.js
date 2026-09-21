@@ -7,7 +7,6 @@
 import { expect, test } from "bun:test";
 import { deflateSync, deflateRawSync } from "node:zlib";
 import { readEntries, listEntries, ZipError } from "../src/containers/ZipReader.bun.js";
-import { scanDocx, scanPptx, scanXlsx } from "../src/containers/Ooxml.bun.js";
 import { scanPdf } from "../src/containers/Pdf.bun.js";
 import { scanHiddenStyles } from "../src/containers/HiddenStyle.bun.js";
 import { scanContainers } from "../src/containers/index.js";

@@ -340,8 +340,8 @@ function categoryFor(cp) {
 function tagCharName(cp) {
   const code = cp - 0xe0000;
   if (code >= 0x30 && code <= 0x39) return `DIGIT ${"ZERO ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE".split(" ")[code - 0x30]}`;
-  if (code >= 0x41 && code <= 0x5a) return `LATIN CAPITAL LETTER ${String.fromCharCode(code)}`;
-  if (code >= 0x61 && code <= 0x7a) return `LATIN SMALL LETTER ${String.fromCharCode(code).toUpperCase()}`;
+  if (code >= 0x41 && code <= 0x5a) return `LATIN CAPITAL LETTER ${String.fromCodePoint(code)}`;
+  if (code >= 0x61 && code <= 0x7a) return `LATIN SMALL LETTER ${String.fromCodePoint(code).toUpperCase()}`;
   return `U+${hex(cp)}`;
 }
 

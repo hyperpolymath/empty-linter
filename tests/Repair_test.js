@@ -3,7 +3,7 @@
 
 import { expect, test } from "bun:test";
 import {
-  actionForFinding, approvePlan, applyPlanToCopy, diffOps, proposePlan,
+  actionForFinding, approvePlan, applyPlanToCopy, proposePlan,
   provenanceRecord, refusePlan, RepairError, sha256Hex, unifiedDiff, verifyCopy,
 } from "../src/core/Repair.bun.js";
 import { scanText } from "../src/core/ScalarScanner.bun.js";

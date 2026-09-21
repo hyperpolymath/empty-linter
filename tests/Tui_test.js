@@ -33,7 +33,7 @@ function makeState() {
 
 test("keys: decodes arrows, enter, esc, backspace, ctrl-c, printables", () => {
   const names = (bytes) => decodeKeys(new Uint8Array(bytes)).map((k) => k.name);
-  const CSI = (final) => names([0x1b, 0x5b, final.charCodeAt(0)]);
+  const CSI = (final) => names([0x1b, 0x5b, final.codePointAt(0)]);
   expect(CSI("A")).toEqual(["up"]);
   expect(CSI("B")).toEqual(["down"]);
   expect(CSI("D")).toEqual(["left"]);

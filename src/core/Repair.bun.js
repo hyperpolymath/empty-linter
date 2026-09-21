@@ -146,7 +146,10 @@ export function approvePlan(plan, grant, now = new Date()) {
     decided_at: now.toISOString(),
     decided_by: grant.decided_by ?? null,
     rationale: grant.rationale,
-    grants: { mechanical: grant.mechanical === true, ambiguous: [...ambiguous].sort() },
+    grants: {
+      mechanical: grant.mechanical === true,
+      ambiguous: [...ambiguous].sort((a, b) => a.localeCompare(b)),
+    },
   };
 
   return {
@@ -350,7 +353,7 @@ export function unifiedDiff(oldText, newText, oldName = "a/input", newName = "b/
     if (op.type === "keep") return;
     const start = Math.max(0, index - context);
     const end = Math.min(ops.length - 1, index + context);
-    const last = windows[windows.length - 1];
+    const last = windows.at(-1);
     if (last && start <= last.end + 1) last.end = Math.max(last.end, end);
     else windows.push({ start, end });
   });
