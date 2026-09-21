@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= The IETF incident fixture
+
+This directory is the executable form of the originating acceptance case in
+https://github.com/hyperpolymath/empty-linter/issues/74[issue #74].
+
+== The incident
+
+An Internet-Draft was repeatedly rejected by the IETF Datatracker because an
+editor had inserted a hidden formatting character into the submitted text.
+The fault was invisible, so the rejection was unactionable. `empty-linter`
+exists to make that class of fault visible, locatable, safely repairable,
+and verifiably gone.
+
+== What is planted
+
+`build-fixture.js` deterministically writes `draft-rfc-style.txt` with exactly
+three plantings (all written as explicit numeric code points, reviewable in
+a plain diff):
+
+[cols="1,2,3",options="header"]
+|===
+| Planting | Where | Expected handling
+
+| U+00A0 NO-BREAK SPACE
+| abstract, between "network" and "layer" — the incident character
+| detected as *mechanical*; proposed as replace-with-space; applied produces
+an inspectable patch with no unrelated changes
+
+| U+200D ZERO WIDTH JOINER
+| inside the word "dataformats"
+| detected as *semantic*; the repair policy must refuse to touch it, and it
+must survive repair byte-for-byte
+
+| Zalgo run (5 combining marks on one base)
+| the "artist's impression" line
+| detected by the suspicious-combining-run detector; preserved by the default
+policy after review
+|===
+
+The remaining text (RFC-style header block, ruler, section headings) is the
+negative control: nothing else in the file may produce a finding.
+
+== What the E2E test asserts
+
+`tests/IetfIncident_test.js` walks the whole product over this file and pins,
+for issue #74's fixture bullets:
+
+* exact code point *and* UTF-8 bytes in the report;
+* file, line, Unicode-scalar column (not a UTF-16 index), byte offset;
+* visible escaped context plus the character name, official Unicode name, and
+  general category;
+* safety classification — mechanical / semantic / ambiguous — per planting;
+* an inspectable patch whose application changes only the accepted finding;
+* SHA-256 input/output hashes, a provenance record, and a *successful rescan*
+  record proving the accepted class of fault is gone while the semantic and
+  reviewed plantings still stand;
+* audit mode never mutating the input.
+
+The test also asserts the checked-in `draft-rfc-style.txt` is byte-identical
+to `build-fixture.js`'s output, so the fixture can never silently drift from
+its generator.
+
+== Regenerating
+
+[source,bash]
+----
+bun run tests/fixtures/ietf-incident/build-fixture.js
+bun test tests/IetfIncident_test.js   # must pass, byte-identical
+----

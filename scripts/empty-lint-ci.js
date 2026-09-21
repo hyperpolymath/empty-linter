@@ -1,51 +1,28 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+//
+// empty-lint-ci.js — the STABLE CI entry point.
+//
+// This is the command the dogfood gate (and downstream repos across the
+// estate) invoke. Its interface, output lines, and exit codes are frozen:
+//
+//   --threshold critical|error|warning|info   --all-files   --help
+//   exit 0 scan okay · exit 1 threshold findings · exit 2 scan could not run
+//   "empty-linter: scanned N file(s); M finding(s), B blocking at threshold T"
+//
+// Since issue #74, the scanning underneath is the expanded scalar-accurate
+// engine (bidi, tags, variation selectors, fillers, zalgo, containers); the
+// legacy AffineScript detector in src/core/ByteDetector.bun.js remains the
+// reviewed reference implementation for the minimum catalogue and keeps its
+// own test suite. The full product CLI is src/cli/Main.bun.js; this shim is
+// its stable, read-only, audit-only front.
 
-import {
-  Critical,
-  Info,
-  SevError,
-  Warning,
-  scan,
-} from "../src/core/ByteDetector.bun.js";
-import { lstat, readFile, readdir } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { collectFiles, scanFile, ScanError } from "../src/core/ScannerIO.bun.js";
+import { atOrAbove, githubAnnotation } from "../src/core/Report.bun.js";
+import { hex } from "../src/core/UnicodeData.bun.js";
 
 const EXIT_FINDINGS = 1;
 const EXIT_SCAN_ERROR = 2;
-
-const DEFAULT_EXTENSIONS = new Set([
-  ".a2ml", ".adoc", ".affine", ".c", ".cc", ".cpp", ".css", ".csv",
-  ".ex", ".exs", ".gleam", ".h", ".hpp", ".hs", ".html", ".idr",
-  ".java", ".jl", ".js", ".json", ".jsx", ".k9", ".md", ".ml",
-  ".ncl", ".res", ".rs", ".sh", ".svg", ".tex", ".toml", ".ts",
-  ".tsx", ".txt", ".v", ".xml", ".yaml", ".yml", ".zig",
-]);
-
-const DEFAULT_IGNORED_DIRECTORIES = new Set([
-  ".git", ".lake", "_build", "deps", "external_corpora",
-  "node_modules", "target",
-]);
-
-const SEVERITY_RANK = new Map([
-  [Info, 1],
-  [Warning, 2],
-  [SevError, 3],
-  [Critical, 4],
-]);
-
-const THRESHOLDS = new Map([
-  ["critical", Critical],
-  ["error", SevError],
-  ["warning", Warning],
-  ["info", Info],
-]);
-
-const UTF8_DECODER = new TextDecoder("utf-8", {
-  fatal: true,
-  // Preserve a leading BOM so the detector can report it.
-  ignoreBOM: true,
-});
 
 function usage() {
   console.log(`Usage: bun run scripts/empty-lint-ci.js [options] [path ...]
@@ -60,8 +37,12 @@ Exit status:
   1  Findings at or above the threshold
   2  The scan could not be completed
 
-The command never modifies input. Findings below the threshold are still reported.`);
+The command never modifies input. Findings below the threshold are still reported.
+Extended diagnostics (settings, JSON/hex reports, repair plans) live in
+src/cli/Main.bun.js; this shim is the stable audit surface for CI.`);
 }
+
+const THRESHOLD_NAMES = new Map([["critical", "critical"], ["error", "error"], ["warning", "warning"], ["info", "info"]]);
 
 function parseArguments(args) {
   let threshold = "critical";
@@ -88,62 +69,26 @@ function parseArguments(args) {
     }
   }
 
-  if (!THRESHOLDS.has(threshold)) {
+  if (!THRESHOLD_NAMES.has(threshold)) {
     throw new Error(`invalid threshold: ${threshold}`);
   }
 
   return {
     allFiles,
     paths: paths.length === 0 ? ["."] : paths,
-    threshold: THRESHOLDS.get(threshold),
-    thresholdName: threshold,
+    threshold,
   };
 }
 
-function extension(path) {
-  return extname(path).toLowerCase();
-}
-
-function shouldScan(path, allFiles) {
-  return allFiles || DEFAULT_EXTENSIONS.has(extension(path));
-}
-
-async function collectFiles(path, allFiles, files) {
-  // The caller deliberately grants this local CLI access to each supplied
-  // path. Dynamic filesystem arguments are the scanner's trust boundary.
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- intended local CLI path
-  const info = await lstat(path);
-  if (info.isSymbolicLink()) return;
-  if (info.isFile()) {
-    if (shouldScan(path, allFiles)) files.push(path);
-    return;
-  }
-  if (!info.isDirectory()) return;
-
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- enumerating the granted path
-  const entries = await readdir(path, { withFileTypes: true });
-  entries.sort((left, right) => left.name.localeCompare(right.name));
-  for (const entry of entries) {
-    if (entry.isDirectory() && DEFAULT_IGNORED_DIRECTORIES.has(entry.name)) continue;
-    const child = path === "." ? entry.name : join(path, entry.name);
-    await collectFiles(child, allFiles, files);
-  }
-}
-
-function severityName(severity) {
-  if (severity === Critical) return "critical";
-  if (severity === SevError) return "error";
-  if (severity === Warning) return "warning";
-  return "info";
-}
-
-function annotation(path, artifact, blocking) {
+function annotation(path, finding, blocking) {
   const level = blocking ? "error" : "warning";
-  const message = `${artifact.name} U+${artifact.byte_value.toString(16).toUpperCase().padStart(4, "0")} (${severityName(artifact.severity)})`;
+  const codePoint = finding.code_point === null ? finding.name : `U+${hex(finding.code_point)}`;
   if (process.env.GITHUB_ACTIONS === "true") {
-    console.log(`::${level} file=${path},line=${artifact.line},col=${artifact.column}::${message}`);
+    console.log(githubAnnotation(path, finding, blocking));
   } else {
-    console.log(`${path}:${artifact.line}:${artifact.column}: ${level}: ${message}`);
+    const line = finding.line ?? 1;
+    const column = finding.column ?? 1;
+    console.log(`${path}:${line}:${column}: ${level}: ${finding.name} ${codePoint} (${finding.severity})`);
   }
 }
 
@@ -157,34 +102,45 @@ async function main() {
     process.exit(EXIT_SCAN_ERROR);
   }
 
-  const files = [];
+  let files;
   try {
-    for (const path of options.paths) await collectFiles(path, options.allFiles, files);
+    files = await collectFiles(options.paths, { allFiles: options.allFiles });
   } catch (error) {
-    console.error(`empty-linter: could not enumerate input: ${error.message}`);
+    if (error instanceof ScanError) {
+      console.error(`empty-linter: ${error.message}`);
+    } else {
+      console.error(`empty-linter: could not enumerate input: ${error.message}`);
+    }
     process.exit(EXIT_SCAN_ERROR);
   }
 
   let findings = 0;
   let blockingFindings = 0;
-  try {
-    for (const path of files) {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- reading an enumerated path
-      const bytes = await readFile(path);
-      const content = UTF8_DECODER.decode(bytes);
-      for (const artifact of scan(content)) {
-        findings += 1;
-        const blocking = SEVERITY_RANK.get(artifact.severity) >= SEVERITY_RANK.get(options.threshold);
-        if (blocking) blockingFindings += 1;
-        annotation(path, artifact, blocking);
-      }
+  const scanErrors = [];
+
+  for (const path of files) {
+    const result = await scanFile(path, { scannerOptions: {} });
+    if (result.kind === "error") {
+      scanErrors.push(`${path}: ${result.error}`);
+      continue;
     }
-  } catch (error) {
-    console.error(`empty-linter: scan failed: ${error.message}`);
+    for (const finding of result.findings) {
+      findings += 1;
+      const blocking = atOrAbove(finding, options.threshold);
+      if (blocking) blockingFindings += 1;
+      annotation(path, finding, blocking);
+    }
+  }
+
+  if (scanErrors.length > 0) {
+    for (const error of scanErrors) {
+      console.error(`empty-linter: scan failed: ${error}`);
+    }
+    console.error(`empty-linter: ${scanErrors.length} file(s) could not be scanned (scanner errors fail distinctly from findings)`);
     process.exit(EXIT_SCAN_ERROR);
   }
 
-  console.log(`empty-linter: scanned ${files.length} file(s); ${findings} finding(s), ${blockingFindings} blocking at threshold ${options.thresholdName}`);
+  console.log(`empty-linter: scanned ${files.length} file(s); ${findings} finding(s), ${blockingFindings} blocking at threshold ${options.threshold}`);
   process.exit(blockingFindings > 0 ? EXIT_FINDINGS : 0);
 }
 

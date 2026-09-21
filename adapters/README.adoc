@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Empty-linter adapters (suite composition)
+:toc: left
+
+Issue #74: _Keep Empty-linter independently useful. Define product-owned Groove
+capability manifests; do not create a duplicate central integration engine._
+
+Empty-linter owns *no* integration engine and *no* central queue. Downstream
+products consume its **stable machine-readable records** — the four versioned
+schemas in `../schemas/` — and its CLI. That is the whole contract.
+
+== Capability manifest
+
+The product-owned manifest lives at `../.well-known/groove/manifest.json` and
+is validated (JSON + `service_id`) by the dogfood gate. Every capability
+carries an honest status: `implemented` (tested in this repo), `proposed`
+(schema reserved, blocked on a promotion bar), or `proposal-only` (ForthWall
+— disconnected until its proof and independent-verification gates complete).
+
+== Consumers (proposed wiring, real contract)
+
+These adapters are *proposed* integrations with sibling products; what is
+*implemented and tested here* is the reference consumer and the schemas they
+would read:
+
+[cols="1,2,2"]
+|===
+| Product | Consumes | Shape
+
+| Formatrix Docs | `empty-linter.audit.*` | `diagnostic.v1.json` findings per document
+| Docmatrix      | `empty-linter.audit.*` | `diagnostic.v1.json` findings per document
+| Blocky Writer  | `empty-linter.audit.text` | paste-time scan of drafts
+| Berrywiki      | `empty-linter.audit.text` | page-save scan
+| ProgBlocks     | `empty-linter.audit.text` | block content scan
+|===
+
+== Reference consumer
+
+`adapters/reference-consumer/reference-consumer.bun.js` is a small, tested,
+runnable example: it reads a `diagnostic.v1.json` file from any producer and
+renders a consumer-facing Markdown summary. Copy it as the starting point for
+a real adapter; it validates the records it reads against the shipped schema
+first, so a producer-side breaking change fails loudly rather than silently.
+
+[source,bash]
+----
+bun run src/cli/Main.bun.js audit --format json draft.txt > diagnostics.json
+bun run adapters/reference-consumer/reference-consumer.bun.js diagnostics.json
+----
+
+== What is deliberately NOT here
+
+* No code that calls into Formatrix Docs / Docmatrix / Blocky Writer /
+  Berrywiki / ProgBlocks: their adapters live in *their* repos against these
+  schemas.
+* No Spline records yet (blocked on Spline's promotion bar); the JSON schemas
+  are the typed contract in the meantime.
+* No Cleave authority wiring (blocked on demonstrated postures); approvals are
+  recorded in `approval` objects inside repair plans.
+* No ForthWall execution (proposal-only, disconnected). Critical mode means
+  narrower authority and more evidence, not more aggressive automation.

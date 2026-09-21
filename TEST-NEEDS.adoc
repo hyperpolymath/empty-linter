@@ -1,32 +1,66 @@
-== TEST-NEEDS.md — empty-linter
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= TEST-NEEDS.md — empty-linter
 
-=== CRG Grade: C — ACHIEVED 2026-04-04
+== CRG Grade: C → working evidence base for B
 
-=== Current Test State
+== Current test state (measured 2026-09-21)
 
 [cols=",,",options="header",]
 |===
-|Category |Count |Notes
-|Test directories |1 |Location(s): /tests
-|CI workflows |18 |Running tests on GitHub Actions
-|Unit tests |Configured |AffineScript Jest/Vitest setup
+| Category | Count | Notes
+
+| Active test files | 12 (+1 planned spec pair) | `tests/`, run by plain `bun test`
+| Tests | 152 passing / 0 failing | Bun 1.4.2
+| Expectations | 525 |
+| Subprocess tests | 11 | full CLI exit-code + stderr contract
+| E2E acceptance | 1 suite | IETF incident fixture (issue #74's bullets)
+| CI workflows | 18 | dogfood-gate runs the full suite + sync check
 |===
 
-=== What’s Covered
+== What's covered
 
-* [x] AffineScript unit tests
-* [x] JavaScript interop tests
+* [x] Scalar-accurate scanning (astral-safe columns, byte offsets, UTF-8 bytes)
+* [x] Full augmented catalogue incl. bidi / tags / VS / fillers / controls /
+      noncharacters
+* [x] Zalgo detection with legitimate-diacritic negative controls
+* [x] Settings discovery, validation, legacy compat, distinct failures
+* [x] Repair state machine incl. refusal paths, drift detection, ambiguous
+      grants, patch hunks
+* [x] Schema validation of real emitted records (diagnostic, repair-plan,
+      provenance, rescan)
+* [x] TUI model/renderer/keys (pure — no terminal IO)
+* [x] Container detectors on synthetic in-memory DOCX/PPTX/XLSX/PDF/HTML
+* [x] CLI subprocess contract (exit 0/1/2, config rejection, settings search)
+* [x] IETF incident end-to-end acceptance
+* [x] Adapter reference consumer (validates records against shipped schema)
+* [x] Dogfood gate with planted positive/negative controls
 
-=== Still Missing (for CRG B+)
+== Still missing (for CRG B+)
 
 * [ ] Code coverage reports (codecov integration)
-* [ ] Detailed test documentation in CONTRIBUTING.md
-* [ ] Integration tests beyond unit tests
-* [ ] Performance benchmarking suite
+* [ ] Cognitive-complexity debt (SonarCloud, new code on PR #94):
+      `SchemaValidator` validate (54), `UnicodeData forCodePoint` (31),
+      `Pdf` scan (29), `Tui model` (26), `Ooxml` scan (24),
+      `Repair applyPlanToCopy` (22), `empty-lint-ci` audit (17) — each > 15
+      allowed. Deferred deliberately: these are the most behaviour-pinned
+      functions in the repo; refactors land with dedicated coverage, not
+      rushed cosmetically. Reliability issues from the same report were fixed
+      in this gate round.
+* [ ] Fuzz/property tests for the scanner and the Nickel-subset parser
+      (surrogate-pair boundaries, malformed config syntax)
+* [ ] Golden-file snapshot tests for TUI frames beyond the pinned pins
+* [ ] Performance benchmark suite (large tree enumeration, 100 MB inputs)
+* [ ] Real-world container corpus (actual DOCX/PPTX files from office suites,
+      checked in) — synthetic builders cover structure, not vendor quirks
+* [ ] Differential test: regenerated downstream tables vs a hand-audited
+      expectation set (currently only drift-vs-source is checked)
 
-=== Run Tests
+== Run tests
 
 [source,bash]
 ----
-npm run test  # or: affinescript build && npm run test
+bun test            # full gate
+bun run sync:check  # downstream drift gate
+bun run audit       # dogfood self-audit at critical threshold
 ----

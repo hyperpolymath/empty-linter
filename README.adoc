@@ -8,87 +8,169 @@ image:https://img.shields.io/badge/Runtime-Bun-black.svg[Bun]
 
 Empty-linter finds characters and structures that appear empty or invisible but
 can change, corrupt, or cause the rejection of a document. Its originating case
-was a document repeatedly rejected by the IETF Datatracker because an editor had
-inserted a hidden character that was difficult to locate visually.
+was a document repeatedly rejected by the IETF Datatracker because an editor
+had inserted a hidden character that was difficult to locate visually. That
+incident now ships as a reproducible end-to-end fixture:
+`tests/fixtures/ietf-incident/`.
 
 == Current, demonstrated capability
 
-The implemented minimum is deliberately smaller than the intended product:
+[cols="2,1,3",options="header"]
+|===
+| Capability | Status | Evidence
 
-* the AffineScript detector recognises NUL, unsafe C0 controls, DEL, NBSP,
-  ZWSP, BOM, soft hyphen, LRM/RLM, word joiner, ZWNJ, and ZWJ;
-* the Bun CLI recursively audits a conservative set of text/source extensions;
-* findings include file, one-based line, one-based string column, code point,
-  name, and severity;
-* audit mode never modifies input;
-* exit `0` means the scan completed without a finding at the selected threshold,
-  exit `1` means a policy finding was detected, and exit `2` means the scan did
-  not complete;
-* CI plants no-finding, critical, advisory, BOM, malformed-UTF-8, and
-  enumeration-error cases before auditing this repository; critical findings
-  block, while lower severities are initially advisory.
+| Scalar-accurate text scanner (line, Unicode-scalar column, UTF-8 byte
+offset, UTF-8 byte sequence, escaped context)
+| implemented, tested
+| `src/core/ScalarScanner.bun.js` + `tests/ScalarScanner_test.js` (astral-safe;
+string indices are never reported as Unicode columns)
+
+| Detector catalogue: unsafe C0/DEL, C1, Unicode separators (Zs/Zl/Zp),
+bidi embeddings/overrides/isolates, tag characters, variation selectors,
+object/interlinear markers, fillers, script format controls, deprecated
+controls, invisible math operators, noncharacters
+| implemented, tested
+| `src/core/UnicodeData.bun.js` + `tests/UnicodeData_test.js` — every entry
+carries severity, Unicode category, description, and safety class
+(`mechanical` / `semantic` / `ambiguous`)
+
+| Zalgo / suspicious combining-mark runs (script-aware; legitimate diacritics
+pass)
+| implemented, tested
+| `tests/ScalarScanner_test.js` — café, Devanagari, Thai, and emoji ZWJ
+sequences planted as negative controls
+
+| Visible-character rendering ("show formatting marks")
+| implemented, tested
+| `src/core/Render.bun.js`, `empty-linter show <file>`
+
+| Settings: `config.ncl` (and JSON) is the live, validated configuration path
+| implemented, tested
+| `src/core/Settings.bun.js` — declarative Nickel subset; invalid settings and
+unsupported Nickel features fail distinctly, never silently
+
+| Safe repair: audit → propose → approve → apply-to-copy → verify → refuse;
+inspectable unified-diff patch; SHA-256 provenance; independent rescan
+| implemented, tested
+| `src/core/Repair.bun.js`; audit never mutates input, apply never overwrites
+input, input drift between plan and apply is refused
+
+| Stable machine-readable records: diagnostic, repair-plan, provenance, rescan
+| implemented, tested
+| `schemas/`, validated in-repo against real emitted records
+(`tests/SchemaValidator_test.js`)
+
+| TUI: scan findings, filter, inspect context/bytes, propose and apply
+reviewed repair plans to copies
+| implemented (model/renderer tested; terminal IO thin)
+| `src/tui/`; run `bun run src/cli/Main.bun.js tui`
+
+| Container detectors: DOCX/PPTX hidden runs + text-node artefacts +
+entity-escaped invisibles; XLSX formula cells with empty cached values
+(formula ≠ cached ≠ rendered); PDF invisible text (Tr 3), zero-size fonts,
+zero-width scaling; HTML/CSS/SVG/MD hidden-text idioms
+| implemented, tested
+| `src/containers/` + `tests/Containers_test.js`
+
+| Repository audit gate (stable CI surface)
+| implemented
+| `scripts/empty-lint-ci.js`: exit 0 clean / 1 finding at threshold / 2 scan
+error — scanner errors always fail distinctly from findings
+
+| Legacy AffineScript minimum detector (NUL, C0, DEL, NBSP, ZWSP, BOM, SHY,
+LRM/RLM, WJ, ZWNJ, ZWJ)
+| implemented (reference core kept)
+| `stdlib/ByteDetector.affine` → `src/core/ByteDetector.bun.js` + its test
+suite; the expanded engine supersedes but does not remove it
+
+| Originating acceptance fixture (IETF incident), end to end
+| implemented, tested
+| `tests/IetfIncident_test.js` asserts every requirement of issue #74's
+fixture: exact code point and UTF-8 bytes; file/line/Unicode-scalar
+column/byte offset; visible escaped context and category description;
+mechanical/semantic/ambiguous classification; patch without unrelated changes;
+input/output hashes, provenance, successful rescan record
+|===
 
 [source,bash]
 ----
-just build
-just test
-just audit .
+# Scan (read-only; the stable CI surface)
+bun run scripts/empty-lint-ci.js --threshold critical .
 
-# Tighten the policy when desired
-bun run scripts/empty-lint-ci.js --threshold warning .
+# Full product CLI
+bun run src/cli/Main.bun.js audit --format json draft.txt
+bun run src/cli/Main.bun.js show draft.txt
+
+# Safe repair (nothing is ever written over input)
+bun run src/cli/Main.bun.js plan draft.txt --out plan.json
+bun run src/cli/Main.bun.js approve plan.json --mechanical --rationale "copy-edit"
+bun run src/cli/Main.bun.js apply plan.json --out repaired/
+bun run src/cli/Main.bun.js verify repaired/provenance.jsonl
+
+# Interactive
+bun run src/cli/Main.bun.js tui
+
+# Everything above is gated by:
+bun test
 ----
 
 The reviewed `src/core/ByteDetector.bun.js` artefact is checked in so CI and
 consumers do not depend on an unpublished local compiler. `just build`
-regenerates it from `stdlib/ByteDetector.affine`. AffineScript currently names
-its direct exportable ESM backend `--deno-esm`; that ignored intermediate is
-immediately bundled and tree-shaken by Bun, and no Deno runtime artefact ships.
-A native Bun-labelled AffineScript backend remains an upstream task; see
-https://github.com/hyperpolymath/affinescript/issues/734[AffineScript issue 734].
+regenerates it from `stdlib/ByteDetector.affine` when a compiler is present;
+the expanded v2 engine is plain reviewed Bun JavaScript under `src/core/` and
+needs no build step.
 
 == Not implemented yet
 
-These are requirements, not delivered claims:
+Requirements, not delivered claims:
 
-* a TUI and a functioning settings/configuration loader;
-* exact UTF-8 byte offsets and visible context rendering;
-* the broader Unicode/control/bidirectional/tag/variation detector catalogue;
-* Zalgo and suspicious combining-mark analysis;
-* hidden text, zero-size fonts, and Office/OpenXML/PDF/publisher artefacts;
-* spreadsheet formula cells whose displayed result is empty;
-* safe patch generation, review, provenance, and rescan records;
-* automatic repair, transformation profiles, and workspace constraints;
-* semantic PathHandler and TextTransform modules (their current source files
-  are explicit TODO placeholders and are not part of the active test gate);
-* Formatrix Docs, Blocky Writer, Docmatrix, Berrywiki, ProgBlocks, Groove,
-  Spline, Cleave, or ForthWall integration;
-* completed Idris proofs for the active scanner and repair path.
+* an AffineScript-native rewrite of the *expanded* catalogue (upstream task;
+  see https://github.com/hyperpolymath/affinescript/issues/734[AffineScript
+  issue 734] — the reviewed JS engine is the interim source of truth);
+* Idris proofs connected to the active scanner and repair path
+  (see `PROOF-NEEDS.adoc`);
+* computed-style resolution for hidden text (JS-driven hiding, remote class
+  definitions) — the markup detector is a documented pattern detector;
+* OCR-image text inside PDFs (binary streams are skipped honestly);
+* PathHandler module (`tests/planned/` holds its planned API spec, clearly
+  outside the active gate);
+* live adapters into Formatrix Docs, Docmatrix, Blocky Writer, Berrywiki, and
+  ProgBlocks (adapters live in *their* repos; this repo ships the schemas, the
+  Groove capability manifest, and a tested reference consumer);
+* Spline typed exchange and Cleave authority wiring (proposed; blocked on
+  their promotion bars);
+* ForthWall (proposal-only, disconnected, per the safety direction below).
 
-The complete restoration scope and IETF incident fixture are tracked in
-https://github.com/hyperpolymath/empty-linter/issues/74[issue 74].
-
-Commands for unavailable mutating features refuse with a non-zero status. They
-must not be described as demo-complete or silently replaced by inline grep.
+The complete restoration scope remains tracked in
+https://github.com/hyperpolymath/empty-linter/issues/74[issue 74] until it
+closes; `ROADMAP.adoc` maps the remaining milestone.
 
 == Safety direction
 
 The default product posture is `audit`: inspect and report without mutation.
-Potentially semantic characters such as joiners must not be removed merely
-because they are invisible. Future repair support must produce an inspectable
-plan, preserve an immutable input, record provenance, and independently rescan
-the candidate output.
+The conservative autofix policy is enforced in the repair state machine:
+semantic characters (joiners, variation selectors, script format controls,
+invisible math operators) are never offered as repairs, ambiguous characters
+require per-name grants, and every application produces an inspectable patch,
+SHA-256 input/output provenance, and an independent rescan — with verification
+failing distinctly on any unexpected residue.
 
-ForthWall is only a proposed critical-mode bounded execution facility. It must
-remain disconnected or proposal-only until its authority boundary, operation
-semantics, non-interference properties, and independent verifier have been
-proved. Critical mode means narrower authority and more evidence, not more
-aggressive automation.
+Truth conditions (unchanged, now enforced by tests):
+
+* `configured`, `wired`, `implemented`, `tested`, `proved`, and `deployed` are
+  separate statuses — the table above uses them deliberately;
+* scanner errors fail distinctly from findings (exit 2);
+* a clean result is only trusted because planted unsafe inputs are detected —
+  the CI gate's planted controls and the IETF fixture guarantee it;
+* audit mode never mutates input.
 
 == Runtime and build
 
-The project runtime is Bun. AffineScript is the detector source language and
-Just is the task runner. `mise.toml` describes development tools, but the
-minimum CI audit requires only the checked-in Bun artefact and Bun itself.
+Bun is the runtime; AffineScript remains the semantic source language of the
+legacy minimum detector; Just is the task runner. The minimum CI audit needs
+only Bun. Configuration lives in `config.ncl` (declarative Nickel subset;
+`config.ncl`-as-JSON accepted) and is validated on every run.
 
 See link:TOPOLOGY.adoc[TOPOLOGY] for the implemented boundary and the
-non-implemented expansion map.
+non-implemented map, link:docs/detectors.adoc[docs/detectors] for the full
+catalogue, and `adapters/README.adoc` for suite composition.

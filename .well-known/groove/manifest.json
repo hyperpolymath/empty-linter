@@ -1,0 +1,88 @@
+{
+  "$schema": "https://hyperpolymath.dev/schemas/groove/manifest.v1.json",
+  "service_id": "empty-linter",
+  "service_name": "Empty-linter — negative-space diagnostics",
+  "version": "0.2.0",
+  "owner": "hyperpolymath",
+  "execution": {
+    "mode": "cli",
+    "entry": "bun run src/cli/Main.bun.js",
+    "runtime": "bun>=1.3.0",
+    "sandbox_notes": "All capabilities are local, read-only unless an approved repair plan is applied-to-copy. No network access is required or used."
+  },
+  "capabilities": [
+    {
+      "id": "empty-linter.audit.text",
+      "kind": "query",
+      "status": "implemented",
+      "summary": "Scan UTF-8 text files for invisible/suspicious characters.",
+      "input": { "paths": ["string"] },
+      "output": { "schema": "https://hyperpolymath.dev/schemas/empty-linter/diagnostic.v1.json" },
+      "cli": "audit --format json <path>…"
+    },
+    {
+      "id": "empty-linter.audit.container",
+      "kind": "query",
+      "status": "implemented",
+      "summary": "Scan DOCX/PPTX/XLSX/PDF documents for hidden text, negative-space runs, invisible rendering, and empty-displayed formula cells.",
+      "input": { "paths": ["string"] },
+      "output": { "schema": "https://hyperpolymath.dev/schemas/empty-linter/diagnostic.v1.json" },
+      "cli": "audit --format json <file.docx|pptx|xlsx|pdf>…"
+    },
+    {
+      "id": "empty-linter.repair.propose",
+      "kind": "mutation-plan",
+      "status": "implemented",
+      "summary": "Propose an inspectable repair plan. Mutates nothing.",
+      "output": { "schema": "https://hyperpolymath.dev/schemas/empty-linter/repair-plan.v1.json" },
+      "cli": "plan <file>"
+    },
+    {
+      "id": "empty-linter.repair.apply-verified",
+      "kind": "mutation",
+      "status": "implemented",
+      "summary": "Apply an approved plan to copies only, emit a patch, provenance (SHA-256 in/out), and an independent rescan record. In-place application is refused by construction.",
+      "output": { "schema": "https://hyperpolymath.dev/schemas/empty-linter/provenance.v1.json" },
+      "cli": "approve <plan> --mechanical [--allow NAME,…] && apply <plan> --out <dir> && verify <provenance.jsonl>"
+    },
+    {
+      "id": "empty-linter.render.visible",
+      "kind": "query",
+      "status": "implemented",
+      "summary": "Render invisible characters visibly (formatting-marks view).",
+      "cli": "show <file>"
+    },
+    {
+      "id": "empty-linter.exchange.spline",
+      "kind": "typed-exchange",
+      "status": "proposed",
+      "summary": "Spline-typed exchange of diagnostic/repair records once Spline meets its promotion bar. Until then the JSON schemas ARE the exchange contract.",
+      "blocked_on": "spline promotion bar"
+    },
+    {
+      "id": "empty-linter.authority.cleave",
+      "kind": "authority-boundary",
+      "status": "proposed",
+      "summary": "Cleave authority/lifecycle boundary for repair approvals once postures are demonstrated.",
+      "blocked_on": "cleave authority postures"
+    },
+    {
+      "id": "empty-linter.forthwall.critical-mode",
+      "kind": "bounded-execution",
+      "status": "proposal-only",
+      "summary": "ForthWall remains disconnected until its authority boundary, operation semantics, non-interference properties, and independent verifier are proved.",
+      "blocked_on": "ForthWall proof + independent verification gates"
+    }
+  ],
+  "consumers": [
+    { "repo": "formatrix-docs", "via": "empty-linter.audit.* + diagnostic.v1", "status": "proposed" },
+    { "repo": "docmatrix", "via": "empty-linter.audit.* + diagnostic.v1", "status": "proposed" },
+    { "repo": "blocky-writer", "via": "empty-linter.audit.text", "status": "proposed" },
+    { "repo": "berrywiki", "via": "empty-linter.audit.text", "status": "proposed" },
+    { "repo": "progblocks", "via": "empty-linter.audit.text", "status": "proposed" }
+  ],
+  "notes": [
+    "Statuses are honest: 'implemented' means tested in this repo's suite (bun test).",
+    "No duplicate central integration engine is created here; capabilities map to the CLI described above."
+  ]
+}

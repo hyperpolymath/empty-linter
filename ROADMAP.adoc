@@ -1,23 +1,82 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Rsr Template Repo Roadmap
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Roadmap
+:toc: left
 
-== Current Status
+Tracks https://github.com/hyperpolymath/empty-linter/issues/74[issue #74] —
+restore full negative-space diagnostics, settings, TUI, and safe repair — and
+what remains after it.
 
-Initial development phase.
+== Milestone map
 
-== Milestones
+[cols="1,3,1",options="header"]
+|===
+| Milestone | Content | Status
 
-=== v0.1.0 - Foundation
-* [ ] Core functionality
-* [ ] Basic documentation
-* [ ] CI/CD pipeline
+| M0 Originating incident
+| IETF Datatracker rejection fixture as executable acceptance: exact code
+point, UTF-8 bytes, scalar column, byte offset, escaped context, safety class,
+patch, hashes, provenance, rescan
+| Done (M-complete, tested)
 
-=== v1.0.0 - Stable Release
-* [ ] Full feature set
-* [ ] Comprehensive tests
-* [ ] Production ready
+| M1 Detection core
+| Scalar-accurate scanner; expanded catalogue (separators, bidi, tags,
+variation selectors, object/interlinear markers, fillers, controls,
+noncharacters); zalgo with legitimate-diacritic negative controls
+| Done (M-complete, tested)
 
-== Future Directions
+| M2 Containers
+| DOCX/PPTX hidden runs and conversion artefacts; XLSX empty-cached formula
+cells; PDF invisible/zero-size text; HTML/CSS/SVG/MD hidden-text idioms
+| Done (M-complete, tested, heuristic-labelled)
 
-_To be determined based on community feedback._
+| M3 Settings
+| `config.ncl` as the live validated configuration path; distinct failures;
+toolbar legacy preserved
+| Done (M-complete, tested)
+
+| M4 Safe repair
+| Explicit state machine: audit → propose → approve → apply-to-copy → verify
+→ refuse; conservative policy (semantic chars never offered, ambiguous named
+grants); patch, hashes, provenance, rescan
+| Done (M-complete, tested)
+
+| M5 Product surface
+| CLI (audit/show/plan/approve/apply/verify/tui); TUI scan/filter/inspect/
+repair; stable CI script; machine-readable schemas
+| Done (M-complete, tested; TUI IO shell intentionally thin)
+
+| M6 Downstream sync
+| Userscript and VS Code extension consume the canonical catalogue through
+marked generated regions; drift check in CI
+| Done (M-complete, gated by `sync:check`)
+
+| M7 Suite composition
+| Groove capability manifest; tested reference consumer; Formatrix Docs,
+Docmatrix, Blocky Writer, Berrywiki, ProgBlocks wire adapters in their own
+repos against these schemas; Spline/Cleave upstream promotion; no duplicate
+central engine
+| Partial — manifest + reference consumer shipped; consumer wiring not landed
+
+| M8 Proof-connected core
+| Idris proof obligations tied to the *actual* scanner and repair transitions
+(not template scaffolding); AffineScript-native expanded catalogue once the
+compiler promotes (upstream #734)
+| Not started
+|===
+
+== After issue #74
+
+* Coverage reporting and benchmark suite (see `TEST-NEEDS.adoc`).
+* Better heuristic confidence for review-only container detections
+  (e.g. classify PDF zero-size-text runs by surrounding content).
+* Localization of documentation and audit summaries.
+* Performance work for very large trees (streaming enumeration).
+
+== Standing constraints
+
+* Truth conditions from issue #74 are acceptance criteria, not aspirations.
+* Audit posture remains the default forever; mutations always go through the
+  plan/approve/apply/verify machine.
+* `configured` / `wired` / `implemented` / `tested` / `proved` / `deployed`
+  are reported separately in every status document.

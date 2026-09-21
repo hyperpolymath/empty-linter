@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperpolymath.dev/schemas/empty-linter/diagnostic.v1.json",
+  "title": "Empty-linter diagnostic record, v1",
+  "description": "Stable machine-readable output of one scanned file. Scanner errors are never findings: they appear in errors[] and fail distinctly.",
+  "type": "object",
+  "required": ["schema", "tool", "catalogue_version", "path", "generated_at", "findings", "stats"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "https://hyperpolymath.dev/schemas/empty-linter/diagnostic.v1.json" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "empty-linter" },
+        "version": { "type": "string" }
+      }
+    },
+    "catalogue_version": { "type": "string" },
+    "path": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "input_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "severity", "safety", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "code_point": { "type": ["integer", "null"], "minimum": 0 },
+          "utf8_hex": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "unicode_name": { "type": "string" },
+          "category": { "type": "string" },
+          "severity": { "enum": ["critical", "error", "warning", "info"] },
+          "safety": { "enum": ["mechanical", "semantic", "ambiguous"] },
+          "fix": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["remove", "replace", "keep", "review"] },
+              "with": { "type": "string" }
+            }
+          },
+          "description": { "type": "string" },
+          "line": { "type": ["integer", "null"], "minimum": 1 },
+          "column": { "type": ["integer", "null"], "minimum": 1 },
+          "byte_offset": { "type": ["integer", "null"], "minimum": 0 },
+          "scalar_index": { "type": ["integer", "null"], "minimum": 0 },
+          "utf16_column": { "type": ["integer", "null"], "minimum": 1 },
+          "context_escaped": { "type": "string" }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["scanned_scalars", "finding_count", "scanner_errors"],
+      "additionalProperties": false,
+      "properties": {
+        "scanned_scalars": { "type": "integer", "minimum": 0 },
+        "finding_count": { "type": "integer", "minimum": 0 },
+        "scanner_errors": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

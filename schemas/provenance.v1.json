@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperpolymath.dev/schemas/empty-linter/provenance.v1.json",
+  "title": "Empty-linter provenance record, v1",
+  "description": "What happened to one file during apply-to-copy: input/output SHA-256 hashes, every applied action with its reason, the approval used, versions, and the rescan result.",
+  "type": "object",
+  "required": ["schema", "tool", "catalogue_version", "settings_digest", "path", "output_path", "input", "output", "applied", "applied_edits", "kept", "approval", "recorded_at"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "https://hyperpolymath.dev/schemas/empty-linter/provenance.v1.json" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "empty-linter" },
+        "version": { "type": "string" }
+      }
+    },
+    "catalogue_version": { "type": "string" },
+    "settings_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string" },
+    "output_path": { "type": "string" },
+    "input": {
+      "type": "object",
+      "required": ["sha256", "bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["sha256", "bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "applied": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "action"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "action": { "type": "string" },
+          "decision_reason": { "type": "string" }
+        }
+      }
+    },
+    "applied_edits": { "type": "integer", "minimum": 0 },
+    "kept": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "code_point": { "type": ["integer", "null"] },
+          "line": { "type": ["integer", "null"] },
+          "column": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "transform_profile": { "type": ["string", "null"] },
+    "transform_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string" },
+          "detail": {}
+        }
+      }
+    },
+    "approval": { "type": "object" },
+    "operator": { "type": ["string", "null"] },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "rescan": { "type": ["object", "null"] }
+  }
+}
