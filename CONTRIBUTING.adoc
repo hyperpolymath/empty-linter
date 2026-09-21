@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Contributing to empty-linter
+:toc: left
+
+Thank you for working on the negative-space diagnostics product. This
+repository has an unusually strict honesty bar — please read the "Truth
+conditions" section before writing a status claim anywhere.
+
+== Prerequisites
+
+* Bun at the pinned version (see `.github/workflows/dogfood-gate.yml` and README "Runtime and build").
+* optional: `just` for the task runner (`just test`, `just sync-check`,
+  `just audit`).
+* optional: Guix — `guix shell -m manifest.scm` provides the supporting
+  toolchain (Bun itself is provisioned separately; see `manifest.scm`'s
+  note).
+
+== Development loop
+
+[source,bash]
+----
+bun test                        # the full gate (must stay green)
+bun run sync:check              # downstream userscript/extension drift gate
+bun run audit                   # self-audit at the critical threshold
+bun run src/cli/Main.bun.js audit <file>   # audit arbitrary inputs
+----
+
+CI runs exactly these plus the estate gates (governance, hypatia, secret
+scanner, SonarCloud). A PR is not ready while any of them is red.
+
+== Rules that are not negotiable
+
+. *Truth conditions* (from the originating roadmap issue): `configured`,
+  `wired`, `implemented`, `tested`, `proved`, and `deployed` are separate
+  statuses and must never be conflated in docs, commits, or PR text. No
+  demo, placeholder, or TODO module may be described as a capability.
+  Scanner errors must fail distinctly from findings (exit 2 vs 1 vs 0).
+  A clean result is only trusted because planted unsafe inputs are
+  detected. Audit mode never mutates input.
+. *No literal invisible code points in source.* Plant test fixtures with
+  `String.fromCodePoint()` and numbers, or the checked-in generator under
+  `tests/fixtures/ietf-incident/` — never paste invisibles into a diff.
+  The self-audit gate will find them, and the estate gates will too.
+. *Repair stays conservative.* Semantic-safety code points are never
+  offered as automatic repairs; ambiguous ones require named grants.
+  If you change this policy, you must change the refusal tests with it.
+. *SPDX headers* on every file; docs in AsciiDoc; Bun is the sole tier-1
+  JS runtime (no Node/npm/TypeScript in new code); SHA-256 or stronger
+  for any hashing.
+. *Downstream tables are generated*, never hand-edited: userscript and
+  extension catalogue regions live between
+  `// BEGIN/END GENERATED: empty-linter-artifact-table` markers and are
+  regenerated with `bun run sync:downstream`. Hand edits get reverted by
+  the sync check.
+
+== Commits and PRs
+
+* Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:` …) —
+  the changelog is generated from them.
+* One logical change per commit; suite must pass at every commit.
+* State the evidence in the PR body (test counts, audit output), and state
+  what the PR does *not* do — inherited from this repository's
+  no-overclaim doctrine.
+
+== Security
+
+Please follow `SECURITY.adoc`; never open a public issue for a suspected
+vulnerability.
