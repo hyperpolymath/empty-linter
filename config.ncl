@@ -46,6 +46,21 @@ let OutputFormat = [| 'text, 'json, 'hex |] in
     ],
   },
 
+  # Expanded detector controls (issue #74 — this file IS the active settings
+  # path; loaded and validated by src/core/Settings.bun.js)
+  scanner = {
+    extensions = null,       # null: CLI default extension set
+    catalogue = true,        # code-point catalogue (C0/DEL/C1, Unicode Cf/Zs/…)
+    bidi = true,             # bidirectional embeddings/overrides/isolates
+    tags = true,             # U+E0000–E007F tag characters
+    variation_selectors = true,
+    zalgo = {
+      enabled = true,
+      max_combining = 4,     # ≥ this many Mn/Me marks on one base → ZALGO_RUN
+    },
+    context_radius = 12,     # escaped-context window in Unicode scalars
+  },
+
   # Text transformation options (uses proven SafeWhitespace)
   transform = {
     default = {

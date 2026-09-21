@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperpolymath.dev/schemas/empty-linter/repair-plan.v1.json",
+  "title": "Empty-linter repair plan, v1",
+  "description": "An inspectable, approvable, drift-checked repair plan for one file. States: proposed -> approved|refused; approved -> applied -> verified. Apply writes copies only.",
+  "type": "object",
+  "required": ["schema", "state", "tool", "catalogue_version", "settings_digest", "path", "input", "items", "created_at", "plan_hash"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "https://hyperpolymath.dev/schemas/empty-linter/repair-plan.v1.json" },
+    "state": { "enum": ["proposed", "approved", "refused", "applied", "verified", "failed"] },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "empty-linter" },
+        "version": { "type": "string" }
+      }
+    },
+    "catalogue_version": { "type": "string" },
+    "settings_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string" },
+    "input": {
+      "type": "object",
+      "required": ["sha256", "bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "transform_profile": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "definition": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "action", "grant_class", "reason", "finding"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "index": { "type": "integer", "minimum": 0 },
+          "action": { "enum": ["remove", "replace-space", "replace-newline", "replace", "keep"] },
+          "grant_class": { "enum": ["mechanical", "semantic", "ambiguous"] },
+          "reason": { "type": "string" },
+          "replacement": { "type": "string" },
+          "decision": { "enum": ["approved", "refused", "kept"] },
+          "decision_reason": { "type": "string" },
+          "finding": { "type": "object" }
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": ["schema", "plan_hash", "decided_at", "rationale", "grants"],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": "https://hyperpolymath.dev/schemas/empty-linter/approval.v1.json" },
+        "plan_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "decided_at": { "type": "string", "format": "date-time" },
+        "decided_by": { "type": ["string", "null"] },
+        "rationale": { "type": "string" },
+        "grants": {
+          "type": "object",
+          "required": ["mechanical", "ambiguous"],
+          "additionalProperties": false,
+          "properties": {
+            "mechanical": { "type": "boolean" },
+            "ambiguous": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "refusal": {
+      "type": "object",
+      "required": ["reason", "decided_at"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": { "type": "string" },
+        "decided_by": { "type": ["string", "null"] },
+        "decided_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "plan_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}
