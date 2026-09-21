@@ -88,8 +88,8 @@ deps/
 .cache/
 build/
 dist/
-*.bun.js
-# Empty-linter's CI entry point is a reviewed compiler artefact. Keeping this
-# one output makes the audit runnable without installing an unpublished local
-# AffineScript compiler; `just build` regenerates it from the canonical source.
-!src/core/ByteDetector.bun.js
+# NOTE: `*.bun.js` is deliberately NOT ignored. The expanded engine
+# (issue #74) is hand-written, reviewed Bun JavaScript — it is the source of
+# truth, not a generated artifact. Only the legacy minimum detector
+# (src/core/ByteDetector.bun.js) is compiler output, and it is intentionally
+# checked in as a reviewed artifact so CI needs no unpublished compiler.
