@@ -18,6 +18,57 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+(no changes since 0.2.0)
+
+=== [0.2.0] - 2026-09-21
+
+Restores the full product surface tracked in
+https://github.com/hyperpolymath/empty-linter/issues/74[issue #74]
+(detection core, settings, safe repair, TUI, schemas, containers were landed
+over the preceding commits; this release consolidates the remaining product
+work).
+
+==== Added
+
+* feat(cli): full product CLI — audit, show, plan, approve, apply, verify, tui
+  with the stable exit-code contract (0 clean / 1 findings / 2 scanner error)
+* feat(ci): `bun test` end-to-end gate including CLI subprocess, TUI model,
+  adapters, and IETF incident acceptance tests (152 tests, 525 expectations)
+* feat(sync): `scripts/sync-downstream.js` regenerates the userscript and VS
+  Code extension artifact tables from the canonical augmented catalogue via
+  marked regions; `--check` fails on drift (wired into the dogfood gate)
+* feat(sync): userscript now merges the bidi artifact table into its detector
+  — downstream parity with the canonical catalogue, single source of truth
+* feat(manifest): Groove capability manifest (`.well-known/groove/`) with
+  honest per-capability statuses (implemented / proposed / proposal-only)
+* feat(adapters): tested reference consumer (`adapters/reference-consumer/`)
+  that validates diagnostic records against the shipped schema before
+  rendering — the loud breaking-change detector other consumers copy
+* feat(config): `scanner` section in `config.ncl` — catalogue family toggles,
+  zalgo run limit, context radius; legacy settings continue to warn, not fail
+
+==== Changed
+
+* docs: README/TOPOLOGY/ROADMAP rewritten with honest per-component statuses;
+  no aggregated completion percentage
+* fix(validator): JSON Schema `type` arrays (e.g. `["integer","null"]`) now
+  accepted — required by the shipped repair-plan schema
+* fix(report): `input_sha256` is omitted (not emitted as absent-valued) when
+  not applicable, keeping diagnostic records schema-valid
+* fix(settings): unknown legacy key `overlay_color` now warns as documented
+* chore(tests): placeholder specs for not-yet-existing modules moved to
+  `tests/planned/` as clearly-labelled planned-API specs (not evidence)
+
+==== Notes
+
+* Regenerated downstream tables take severities and descriptions from the
+  canonical catalogue; the VS Code extension's BOM severity changes from
+  `critical` to `warning` by design (single source of truth).
+* Version pin: `src/core/Versions.bun.js` TOOL_VERSION matches package.json
+  (enforced by the sync check).
+
+=== [0.1.0] — pre-release accumulation (previously unreleased)
+
 ==== Added
 
 * feat(crg): add crg-grade and crg-badge justfile recipes

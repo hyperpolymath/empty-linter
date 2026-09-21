@@ -2,26 +2,33 @@
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 = Empty-linter topology and readiness
 
-== Implemented CI path
+== Implemented product paths
 
 ....
-stdlib/ByteDetector.affine
-            │ AffineScript exportable-ESM intermediate (build-only)
-            ▼
-       Bun bundler
-            │
-            ▼
-src/core/ByteDetector.bun.js ──► scripts/empty-lint-ci.js
-            │                              │
-            └──────── Bun tests ───────────┤
-                                           ▼
-                              read-only repository audit
-                    0 no threshold findings / 1 finding / 2 error
+stdlib/ByteDetector.affine ──(AffineScript, build-only)──► src/core/ByteDetector.bun.js
+                                                              (legacy minimum core)
+src/core/UnicodeData.bun.js ──► src/core/ScalarScanner.bun.js ──┐
+src/core/Render.bun.js                                          │
+src/core/ScannerIO.bun.js  ── enumeration, fatal UTF-8, routing │
+src/containers/ (zip · ooxml · pdf · hidden-style)              ├─► scanFile()
+src/core/Settings.bun.js  ── config.ncl (Ni subset) / .json     │
+                                                                ▼
+                              ┌────────────── scripts/empty-lint-ci.js (stable CI gate)
+                              ├────────────── src/cli/Main.bun.js (audit · show · plan ·
+                              │              approve · apply · verify · tui)
+                              └────────────── src/tui/ (interactive UI)
+                                                                │
+              Repair state machine (src/core/Repair.bun.js) ◄───┘
+              audit → propose → approve → apply-to-copy → verify → refuse
+                                                                │
+              schemas/ (diagnostic · repair-plan · provenance · rescan)
+              scripts/sync-downstream.js ─► userscript + VS Code extension
 ....
 
-The workflow tests planted positive and negative controls before trusting the
-repository result. It does not suppress scanner errors and does not modify
-files.
+Every record the product emits is versioned JSON validated in-repo against the
+shipped schemas. The dogfood gate plants positive and negative controls before
+trusting the repository result, never suppresses scanner errors, and never
+modifies files.
 
 == Honest readiness
 
@@ -29,41 +36,64 @@ files.
 |===
 | Capability | Status | Evidence or remaining work
 
-| Basic code-point detector
+| Basic code-point detector (legacy minimum)
 | Implemented
-| AffineScript type-check plus the complete implemented-path Bun test suite
+| AffineScript type-check plus its Bun test suite
 
-| Repository audit gate
+| Expanded detector catalogue (bidi, tags, VS, fillers, controls, zalgo)
+| Implemented, tested
+| `tests/UnicodeData_test.js`, `tests/ScalarScanner_test.js`; scalar columns,
+byte offsets, UTF-8 bytes, escaped context
+
+| Settings (config.ncl active + validated)
+| Implemented, tested
+| `tests/Settings_test.js`, `tests/Cli_test.js` — distinct failures for invalid
+values and unsupported Nickel features
+
+| Safe repair pipeline (plan/approve/apply-to-copy/verify/refuse + patch +
+provenance + rescan)
+| Implemented, tested
+| `tests/Repair_test.js`, `tests/IetfIncident_test.js`
+
+| Machine-readable schemas
+| Implemented, tested
+| `schemas/`; real emitted records validated in `tests/SchemaValidator_test.js`
+
+| TUI (scan/filter/inspect/plan/approve/apply-to-copy)
+| Implemented; IO shell thin
+| Pure model + renderer + key decoder tested in `tests/Tui_test.js`
+
+| Container detectors (OOXML/PDF/spreadsheet/hidden styles)
+| Implemented, tested
+| `tests/Containers_test.js` with in-memory synthetic documents
+
+| Repository audit gate (stable entry point, exit codes)
 | Implemented
-| Seven end-to-end controls; distinct no-finding/finding/error exits
+| Seven+ end-to-end controls in `tests/empty_lint_ci_test.js` plus expansion
 
-| Bun runtime
-| Implemented for the active path
-| Bun-targeted bundled artefact, CLI, tests, and SHA-pinned CI setup
+| Downstream drift control (userscript, VS Code extension)
+| Implemented, gated
+| `scripts/sync-downstream.js --check` in CI
 
-| Full detector catalogue
+| IETF incident acceptance fixture
+| Implemented, tested
+| `tests/IetfIncident_test.js` (every issue-#74 bullet asserted)
+
+| Expanded catalogue in AffineScript
 | Not implemented
-| Unicode, document-container, hidden-style, spreadsheet, and Zalgo work remains
+| Upstream compiler work keeps the reviewed JS engine as the interim source
 
-| Settings and TUI
-| Not implemented
-| Existing Nickel data is not loaded by the active scanner
-
-| Automatic repair
-| Not implemented
-| Must gain conservative plans, approval, provenance, and independent rescan
-
-| Idris-backed scanner proof
+| Idris-backed scanner/repair proof
 | Not demonstrated
 | Proof obligations must be connected to the active implementation
 
-| Precision-suite integration
+| Computed-style / JS-driven hidden-text analysis
 | Not implemented
-| Product-owned Groove capabilities and typed Spline records remain design work
+| Markup detector is a documented pattern detector only
 
-| ForthWall critical execution
-| Not implemented
-| Blocked on explicit proofs and an independent verifier
+| Suite integration (Spline, Cleave, ForthWall)
+| Proposed / proposal-only
+| Groove manifest records the honest statuses; no duplicate engine created
 |===
 
 No overall completion percentage is published: combining implemented and

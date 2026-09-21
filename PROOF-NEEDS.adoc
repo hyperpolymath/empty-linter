@@ -10,3 +10,22 @@ contained only RSR template scaffolding with unresolved
 When this project needs formal ABI verification, create domain-specific
 Idris2 proofs following the pattern in repos like `+typed-wasm+`,
 `+proven+`, `+echidna+`, or `+boj-server+`.
+
+== Proof obligations that *would* connect to the live product (roadmap M8)
+
+These are stated as obligations, not claims — none are currently proved:
+
+1. *Scalar-column correctness* — the scanner's reported Unicode-scalar column
+   equals the count of scalars since the last line break (i.e. UTF-16 units
+   and byte offsets can never be conflated).
+2. *Repair conservativity* — for every plan produced by the default policy,
+   no semantic-safety code point is removed or replaced, and applying the
+   plan changes only bytes belonging to accepted findings.
+3. *Rescan soundness* — if verify emits a successful rescan record, no
+   accepted-class finding remains in the output copy.
+4. *Audit purity* — audit mode's output bytes are the input bytes
+   (no mutation under any error path).
+
+`tests/IetfIncident_test.js`, `tests/Repair_test.js`, and
+`tests/ScalarScanner_test.js` are the executable approximations of these
+obligations today.

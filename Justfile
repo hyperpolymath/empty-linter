@@ -7,7 +7,7 @@ set positional-arguments := true
 import? "contractile.just"
 
 project := "empty-linter"
-version := "0.1.0"
+version := "0.2.0"
 tier := "infrastructure"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -48,20 +48,30 @@ dev:
 # TESTING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Run all tests
-test: build
-    @echo "Running implemented core and CI audit tests..."
-    bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js
+# Run the full test gate (expanded core, settings, repair, TUI, containers,
+# CLI contract, adapters, IETF-incident acceptance). Planned-API specs live in
+# tests/planned/ and are deliberately outside this run.
+test:
+    @echo "Running the full test gate..."
+    bun test
 
 # Run tests with verbose output
-test-verbose: build
+test-verbose:
     @echo "Running tests (verbose)..."
-    bun test --verbose tests/ByteDetector_test.js tests/empty_lint_ci_test.js
+    bun test --verbose
 
 # Run specific test file
-test-file file: build
+test-file file:
     @echo "Running {{file}}..."
     bun test tests/{{file}}
+
+# Fail if userscript/extension tables drift from the canonical catalogue
+sync-check:
+    bun run scripts/sync-downstream.js --check
+
+# Regenerate userscript/extension tables from the canonical catalogue
+sync-downstream:
+    bun run scripts/sync-downstream.js
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LINT & FORMAT (The Crap-Overlay)
@@ -75,17 +85,20 @@ audit path=".": build
 audit-quick path=".": build
     @bun run scripts/empty-lint-ci.js {{path}}
 
-# Refuse unavailable automatic repair
-fix path=".":
-    @echo "empty-linter: automatic repair is not implemented; audit and review findings instead" >&2
-    @exit 2
+# Propose a reviewed repair plan (never mutates input)
+plan path=".":
+    bun run src/cli/Main.bun.js plan {{path}}
 
-# Refuse unavailable transformations
+# Apply an approved plan to a COPY in --out dir, then verify with a rescan
+fix plan:
+    bun run src/cli/Main.bun.js apply {{plan}}
+
+# Offline transform is not part of the product; use plan/apply
 transform path:
-    @echo "empty-linter: transformation is not implemented" >&2
+    @echo "empty-linter: use 'just plan {{path}}' / 'just fix <plan.json>' (audit-first repair)" >&2
     @exit 2
 
-# Refuse unavailable workspace constraints
+# Workspace constraints are not part of the product
 check path workspace="twitter":
     @echo "empty-linter: workspace constraints are not implemented" >&2
     @exit 2

@@ -1,2 +1,32 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= STATE — empty-linter
+
+== 2026-09-21 — issue #74 restoration consolidated (0.2.0)
+
+Product surface restored and evidence-complete per the issue's truth
+conditions. Measured baseline: *152 tests / 0 failing / 525 expectations*
+(Bun 1.4.2), full-suite gate in the dogfood workflow, downstream drift check
+(`sync:check`) green, self-audit at critical threshold clean (174 files).
+
+Implemented and tested this arc: expanded detector catalogue (bidi, tags,
+variation selectors, fillers, controls, noncharacters, zalgo with
+diacritic negative controls); live `config.ncl` settings with distinct
+validation failures; safe-repair state machine with refusal paths;
+versioned schemas + in-repo record validation; TUI (pure core tested);
+container detectors; CLI subprocess contract; the IETF incident E2E
+fixture; Groove capability manifest; tested reference consumer; userscript
+and extension consuming regenerated catalogue regions.
+
+Not connected (honest): AffineScript-native expanded catalogue (upstream
+promotion pending), Idris proofs tied to the active code (obligations
+listed in PROOF-NEEDS), computed-style hiding analysis, OCR-image PDF
+text, live adapters in consumer repos (schemas + reference consumer ship
+here; wiring lands in their repos), Spline/Cleave/ForthWall integration
+(manifest records proposed/proposal-only statuses).
+
+Placeholder specs for modules that do not exist live in `tests/planned/`
+— explicitly not evidence and outside the active gate.
+
+Branch `restore/issue-74-full-product` carries the consolidation; see
+CHANGELOG 0.2.0.

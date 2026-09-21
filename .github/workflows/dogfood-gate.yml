@@ -112,11 +112,18 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: 1.3.14
-      - name: Test the compiled scanner and planted controls
-        # PathHandler and TextTransform remain explicit TODO modules; their
-        # aspirational tests are not evidence for the implemented audit path.
-        run: bun test tests/ByteDetector_test.js tests/empty_lint_ci_test.js
+          bun-version: 1.4.2 # suite verified locally on 1.4.2 (2026-09)
+      - name: Run the full test suite
+        # Full gate: expanded detector core, settings, repair state machine,
+        # schemas, TUI model, containers, CLI subprocess contract, adapters,
+        # and the IETF incident E2E acceptance. Planned-API specs live in
+        # tests/planned/ — deliberately outside this run — until the modules
+        # they describe exist.
+        run: bun test
+      - name: Check downstream drift
+        # Userscript and VS Code extension artifact tables must match the
+        # canonical augmented catalogue; drift fails the gate.
+        run: bun run scripts/sync-downstream.js --check
       - name: Audit repository with Empty-linter
         run: bun run scripts/empty-lint-ci.js --threshold critical .
       - name: Write summary
@@ -125,7 +132,7 @@ jobs:
           {
             echo "## Empty-linter audit"
             echo ""
-            echo "The Bun-targeted Empty-linter core was tested with planted no-finding, critical, advisory, BOM, malformed-UTF-8, and enumeration-error cases, then used to audit the repository."
+            echo "The full Bun test suite (scanner, catalogue, settings, repair, schemas, containers, TUI model, CLI contract, adapters, IETF-incident acceptance) ran with planted controls, the downstream userscript/extension tables were drift-checked against the canonical catalogue, and the repository audited itself at the critical threshold."
             echo "Critical findings block this gate; lower-severity Unicode findings are currently advisory."
           } >> "$GITHUB_STEP_SUMMARY"
   # ---------------------------------------------------------------------------

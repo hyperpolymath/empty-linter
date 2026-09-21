@@ -28,6 +28,19 @@ just tour      # guided project tour
 just help-me   # see common workflows
 ----
 
+== Use the Product
+
+[source,bash]
+----
+bun run scripts/empty-lint-ci.js .           # read-only audit (exit 0/1/2)
+bun run src/cli/Main.bun.js audit file.txt   # full report, any file
+bun run src/cli/Main.bun.js show file.txt    # "show formatting marks" view
+bun run src/cli/Main.bun.js plan file.txt --out plan.json
+bun run src/cli/Main.bun.js approve plan.json --mechanical
+bun run src/cli/Main.bun.js apply plan.json --out repaired/  # writes copies only
+bun run src/cli/Main.bun.js tui              # interactive review
+----
+
 == Get Help
 
 * `just help-me` — common workflows

@@ -8,45 +8,103 @@ The README makes claims. This file backs them up.
 
 [quote, README]
 ____
-It acts as the "Eyes" for agents, enforcing symbolic structural intent over hidden "crap-voids."
+It acts as the "Eyes" for agents, enforcing symbolic structural intent over
+hidden "crap-voids."
 ____
 
-== Technology Choices
+== How to reproduce every claim
+
+[source,bash]
+----
+bun test                                   # 152 tests, 525 expectations
+bun run scripts/empty-lint-ci.js .         # audit this repo: exit 0
+bun run sync:check                         # downstream tables in sync
+bun run src/cli/Main.bun.js audit \
+  tests/fixtures/ietf-incident/draft-rfc-style.txt
+----
+
+The last command prints three findings at the exact recorded offsets:
+the incident NBSP (line 9), the semantic ZWJ (line 10), and the zalgo run
+(line 11). `tests/IetfIncident_test.js` then walks plan → approve →
+apply-to-copy → verify over the same file and asserts issue #74's fixture
+conditions end to end.
+
+== Technology choices
 
 [cols="1,2"]
 |===
-| Technology | Learn More
+| Technology | Role (honest)
 
-| **Zig** | https://ziglang.org
-| **Bun** | https://bun.sh
-| **AffineScript** | https://affinescript-lang.org
-| **Idris2 ABI** | https://www.idris-lang.org
+| *Bun*
+| The runtime. The expanded engine is plain, reviewed Bun JavaScript with no
+build step.
+
+| *AffineScript*
+| Semantic source language of the *legacy minimum* detector
+(`stdlib/ByteDetector.affine` → checked-in reviewed artefact). The expanded
+catalogue is not yet AffineScript-native (upstream promotion pending).
+
+| *Nickel subset / JSON*
+| Live configuration (`config.ncl`), parsed and validated in-repo.
+
+| *Idris2 ABI*
+| Not currently connected. Template scaffolding was removed for implying
+verification that did not exist (see `PROOF-NEEDS.adoc`); domain proofs tied
+to the active scanner/repair are roadmap M8.
 |===
 
-== Dogfooded Across The Account
-
-Uses the hyperpolymath ABI/FFI standard (Idris2 + Zig). Same pattern used across
-https://github.com/hyperpolymath/proven[proven],
-https://github.com/hyperpolymath/burble[burble], and
-https://github.com/hyperpolymath/gossamer[gossamer].
-
-== File Map
+== File map
 
 [cols="1,2"]
 |===
-| Path | What's There
+| Path | What's there
 
-| `src/` | Source code
-| `lib/` | Library code
-| `ffi/` | Foreign function interface
-| `tests/` | Bun test suite
-| `scripts/empty-lint-ci.js` | Implemented read-only repository audit CLI
-| `src/core/ByteDetector.bun.js` | Reviewed Bun-targeted compiler artefact
+| `src/core/`
+| Expanded engine: augmented Unicode catalogue, scalar scanner, renderer,
+settings, repair state machine, JSON-Schema validator, report emitter
+
+| `src/containers/`
+| OOXML / XLSX / PDF / hidden-style detectors plus a minimal zip reader
+
+| `src/cli/`
+| Product CLI (`audit · show · plan · approve · apply · verify · tui`)
+
+| `src/tui/`
+| Interactive UI: pure model, renderer, key decoder + thin IO shell
+
+| `schemas/`
+| Versioned JSON schemas: diagnostic, repair-plan, provenance, rescan
+
+| `tests/`
+| Bun suite (13 active files); `tests/planned/` holds planned-API specs
+outside the gate
+
+| `tests/fixtures/ietf-incident/`
+| The originating incident as an executable acceptance fixture
+
+| `scripts/empty-lint-ci.js`
+| Implemented read-only repository audit (the stable CI gate)
+
+| `scripts/sync-downstream.js`
+| Regenerates userscript / extension tables from the catalogue; `--check`
+
+| `userscript/`, `vscode-extension/`
+| Downstream surfaces consuming marked, regenerated catalogue regions
+
+| `adapters/`
+| Composition docs + tested reference consumer for suite repos
+
+| `.well-known/groove/manifest.json`
+| Groove capability manifest with honest per-capability statuses
 |===
 
-The current receipt covers the basic detector and audit gate only. The TUI,
-settings loader, document-container detectors, automatic repair, and proof
-integration remain open work and are not implied by this file.
+== What this file does *not* claim
+
+Computed-style resolution, OCR-image PDF text, an AffineScript-native expanded
+catalogue, connected Idris proofs, and live third-repo adapters are not
+implied by anything above. `configured`, `wired`, `implemented`, `tested`,
+`proved`, and `deployed` remain separate statuses in every claim this
+repository makes.
 
 == Questions?
 

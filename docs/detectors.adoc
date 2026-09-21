@@ -1,0 +1,169 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Detector catalogue
+:toc: left
+
+Canonical reference for everything empty-linter detects, and how each finding
+is classified. The machine source of truth is `src/core/UnicodeData.bun.js`
+(`CATALOGUE_VERSION` 2.0.0); the userscript and VS Code extension tables are
+regenerated from it by `bun run sync:downstream` and drift-checked in CI.
+
+== How findings are classified
+
+Every catalogue entry carries four decisions:
+
+severity:: `info` < `warning` < `error` < `critical`. The CI threshold gate
+compares with these (`SEVERITY_ORDER`).
+
+safety:: `mechanical` (safe to remove/replace without changing meaning),
+`semantic` (removal changes meaning — never offered as an automatic repair),
+or `ambiguous` (depends on context — repair only with an explicit named
+grant).
+
+fix:: the conservative suggestion attached to the entry: `remove`,
+`replace with`, `keep`, or `review`.
+
+category:: the Unicode general category (`Cc`, `Cf`, `Zs`, `Zl`, `Zp`, `Mn`,
+`Cn`), surfaced in reports alongside the character's official name.
+
+Findings always include: exact code point, UTF-8 byte sequence, file, line,
+Unicode-scalar column (never a UTF-16 index), byte offset, and an escaped
+context window (radius configurable in `config.ncl`).
+
+== Code-point families (text scanner)
+
+[cols="2,3,2,3",options="header"]
+|===
+| Family | Contents | Default severity / safety | Notes
+
+| Legacy minimum set
+| NUL, NBSP, ZWSP, BOM, SHY, LRM/RLM, WJ, ZWNJ, ZWJ
+| critical→warning; mixed
+| Metadata preserved from `ByteDetector.affine`. ZWNJ/ZWJ are *semantic —
+keep*.
+
+| Bidi controls
+| ALM; LRE/RLE/PDF; LRO/RLO; LRI/RLI/FSI/PDI
+| error (overrides critical); ambiguous (ALM semantic)
+| Trojan Source class (CVE-2021-42574). Removal of embeddings/isolates is
+never automatic: it can strand directional state.
+
+| Separators — Unicode Zs
+| Ogham space, en/em quads and spaces, three/four/six-per-em, figure,
+punctuation, thin, hair, NNBSP, ideographic space
+| info–error; ambiguous (replace with space suggested)
+| NBSP and ZWSP are mechanical; ideographic space is the canonical
+ambiguous-repair example.
+
+| Line/paragraph separators
+| LS (U+2028), PS (U+2029)
+| error; mechanical — replace with `\n`
+| `String.prototype.trim()` and "is whitespace?" answers disagree across
+tools; both break naive line counting.
+
+| Deprecated controls
+| Activations/block-end of Arabic symmetrical interchange set (U+206A–206F),
+inhibit/activate symmetric swapping, etc.
+| error; ambiguous
+| Deprecated by Unicode but still encountered in old exports.
+
+| Invisible math operators
+| Invisible times, comma, plus, separator, function application (U+2061–2064)
+| warning; semantic — keep
+| Meaningful in MathML/computer-algebra interchange; never auto-removed.
+
+| Script format controls
+| Mongolian vowel separator, Khmer inherent vowels, Meetei Mayek, and similar
+Cf controls
+| warning; semantic — keep
+| Meaningful to their scripts.
+
+| Grapheme join control
+| CGJ (U+034F)
+| warning; semantic — keep
+| Blocks normalization reordering; deleting it changes string identity.
+
+| Object / interlinear markers
+| U+FFF9 INTERLINEAR ANNOTATION ANCHOR, U+FFFA SEPARATOR, U+FFFB TERMINATOR
+| error; ambiguous
+| Abused to smuggle invisible annotation payloads; also the document-
+object-model class the issue calls out.
+
+| Fillers and blank patterns
+| U+3164 Hangul filler, U+FFA0 halfwidth filler, U+115F/1160 Hangul choseong/
+jungseong fillers, Braille pattern blank (U+2800)
+| warning; ambiguous — replace with space suggested
+| Render as blank in many fonts; classic disguised-space abuse.
+
+| Noncharacters and reversed BOM
+| U+FDD0–FDEF, U+xFFFE/xFFFF every plane, U+FFFE
+| error; ambiguous
+| Permanently reserved; correct only as internal sentinels.
+
+| Unsafe C0 / DEL
+| C0 minus tab/LF/CR; DEL
+| critical; mechanical (fix: review)
+| Usually corruption or stale-edit artefacts.
+
+| C1 controls
+| U+0080–009F (NEL downgraded to warning)
+| error; mechanical (fix: review)
+| Invisible terminal-protocol bytes with no place in documents.
+
+| Tags
+| U+E0001 LANGUAGE TAG, U+E0020–E007F tag ASCII, U+E007F CANCEL TAG
+| warning–error; ambiguous
+| Classic invisible-data smuggling vector.
+
+| Variation selectors
+| VS1–VS16 (U+FE00–FE0F), VS17–VS256 (U+E0100–E01EF)
+| warning; semantic — keep
+| Glyph selection (text vs emoji presentation, CJK variants).
+
+| Musical / shorthand / Egyptian format controls
+| U+1D173–1D17A, U+1BCA0–1BCA3, U+13430–13438, Kaithi number signs
+| info–warning; semantic/ambiguous
+| Meaningful within their notation systems.
+|===
+
+== Zalgo / suspicious combining-mark runs
+
+When a run of combining marks on one base character exceeds
+`scanner.zalgo.max_combining` (default 4) the scanner emits a `ZALGO_RUN`
+finding (warning, safety mechanical, fix review) — *without* flagging
+legitimate diacritics or emoji ZWJ sequences. The check is tunable and can be
+disabled (`scanner.zalgo.enabled = false`); café, Devanagari conjuncts, Thai
+vowel stacks, and family-emoji sequences are planted as negative controls in
+the test suite.
+
+== Container detectors
+
+[cols="2,3,2",options="header"]
+|===
+| Detector | Finds | Note
+
+| OOXML (DOCX/PPTX)
+| Hidden runs (`w:vanish`, `w:webHidden`), zero/suspicious font sizes,
+off-slide/behind shapes, invisible-artefact code points inside text nodes,
+entity-escaped invisible code points (e.g. ``\&#x202E;``)
+| folder-based extraction; heuristic findings labelled `review`
+
+| Spreadsheet (XLSX)
+| `EMPTY_FORMULA_CELL` — formula cells whose cached value is empty (formula
+≠ cached ≠ rendered)
+| review severity; the three states are reported distinctly
+
+| PDF
+| Text rendering mode 3 (invisible), zero-size fonts, zero horizontal
+scaling, invisible-artefact code points inside `(…)` strings
+| binary (compressed) streams are skipped honestly — no OCR claims
+
+| Hidden styles (HTML/CSS/SVG/MD)
+| `display:none`, `visibility:hidden`, `opacity:0`, off-screen absolute
+positioning, zero-size font, `hidden`/`aria-hidden` abuse, tiny/clipped text
+| pattern detector: computed-style and JS-driven hiding are explicitly out of
+scope
+|===
+
+Container findings label themselves `heuristic` in the report when they are
+pattern-based, so consumers can treat review-only detections differently.
