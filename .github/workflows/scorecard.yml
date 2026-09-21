@@ -33,6 +33,7 @@ jobs:
     # is silently downgraded and fails. (timeout-minutes is intentionally absent:
     # it is not a permitted key on a reusable-calling job — the reusable owns it.)
     permissions:
+      actions: read
       contents: read
       security-events: write
       id-token: write
