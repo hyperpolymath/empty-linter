@@ -17,11 +17,11 @@ jobs:
     env:
       GITLAB_SSH_KEY: ${{ secrets.GITLAB_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.GITLAB_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.GITLAB_SSH_KEY }}
       - name: Mirror to GitLab
@@ -36,11 +36,11 @@ jobs:
     env:
       BITBUCKET_SSH_KEY: ${{ secrets.BITBUCKET_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.BITBUCKET_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.BITBUCKET_SSH_KEY }}
       - name: Mirror to Bitbucket
@@ -55,11 +55,11 @@ jobs:
     env:
       CODEBERG_SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.CODEBERG_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.CODEBERG_SSH_KEY }}
       - name: Mirror to Codeberg
@@ -74,11 +74,11 @@ jobs:
     env:
       SOURCEHUT_SSH_KEY: ${{ secrets.SOURCEHUT_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.SOURCEHUT_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.SOURCEHUT_SSH_KEY }}
       - name: Mirror to SourceHut
@@ -93,11 +93,11 @@ jobs:
     env:
       DISROOT_SSH_KEY: ${{ secrets.DISROOT_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.DISROOT_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.DISROOT_SSH_KEY }}
       - name: Mirror to Disroot
@@ -112,11 +112,11 @@ jobs:
     env:
       GITEA_SSH_KEY: ${{ secrets.GITEA_SSH_KEY }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - if: ${{ env.GITEA_SSH_KEY != '' }}
-        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ env.GITEA_SSH_KEY }}
       - name: Mirror to Gitea
@@ -129,11 +129,11 @@ jobs:
     timeout-minutes: 15
     if: vars.RADICLE_MIRROR_ENABLED == 'true'
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # stable
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
       - name: Install Radicle
